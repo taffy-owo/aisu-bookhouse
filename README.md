@@ -28,10 +28,12 @@
 
 ### 打开书屋，接着上次的阅读
 
+<a href="docs/images/home-light.png">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/home-dark.png">
   <img src="docs/images/home-light.png" alt="首页：继续阅读、阅读统计与最近翻过的图书" width="1440">
 </picture>
+</a>
 
 <p align="center"><sub>首页跟随明暗主题展示。点击图片可查看大图。</sub></p>
 
