@@ -1,46 +1,62 @@
 <div align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="public/aisu-brand.svg">
-    <img src="public/aisu-brand-light.svg" alt="爱素书屋" width="100" height="100">
-  </picture>
+  <img src="docs/images/readme-banner.svg" alt="爱素书屋：把喜欢的故事，留在自己的书架。" width="100%">
   <h1>爱素书屋</h1>
-  <p>自部署的在线书库，支持小说、漫画和 PDF，以及翻译和听书。</p>
+  <p><strong>一间属于自己的在线书屋。</strong></p>
+  <p>收藏小说、漫画与 PDF，在自己的服务器上阅读、翻译和听书。</p>
   <p>
     <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/License-MIT-987274?style=flat-square"></a>
     <img alt="React 19" src="https://img.shields.io/badge/React-19-6d8a96?style=flat-square">
     <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5d7e99?style=flat-square">
     <img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-658c80?style=flat-square">
   </p>
-  <p><a href="#界面预览">界面预览</a> · <a href="#功能">功能</a> · <a href="#本地运行">本地运行</a> · <a href="docs/deployment.md">部署说明</a> · <a href="https://github.com/taffy-owo/aisu-bookhouse/issues">反馈问题</a></p>
+  <p><a href="#界面预览">界面预览</a> · <a href="#功能">功能一览</a> · <a href="#本地运行">开始使用</a> · <a href="docs/deployment.md">自部署指南</a> · <a href="https://github.com/taffy-owo/aisu-bookhouse/issues">反馈问题</a></p>
 </div>
 
-## 界面预览
+## 从书架，回到故事里
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/images/home-dark.png">
-  <img src="docs/images/home-light.png" alt="爱素书屋首页" width="1440">
-</picture>
+把散落的电子书放进同一个书库，按标签、系列与阅读状态整理；再次打开时，从上次读到的位置继续。
 
 <table>
   <tr>
-    <td width="50%"><img src="docs/images/library.png" alt="书架"><p align="center">书架</p></td>
-    <td width="50%"><img src="docs/images/reader.png" alt="夜间阅读与章节目录"><p align="center">夜间阅读</p></td>
+    <td width="33%" valign="top"><strong>01 / 收藏与整理</strong><br><br>导入多种格式，搜索、收藏、标记阅读状态，为每本书找到位置。</td>
+    <td width="33%" valign="top"><strong>02 / 按自己的节奏读</strong><br><br>调整字体、行距与纸色，切换日夜主题，使用书签、备注与章节目录。</td>
+    <td width="33%" valign="top"><strong>03 / 换一种方式继续</strong><br><br>使用翻译、日文阅读辅助或听书，登录同一账号跨设备续读。</td>
+  </tr>
+</table>
+
+## 界面预览
+
+### 打开书屋，接着上次的阅读
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/home-dark.png">
+  <img src="docs/images/home-light.png" alt="首页：继续阅读、阅读统计与最近翻过的图书" width="1440">
+</picture>
+
+<p align="center"><sub>首页跟随明暗主题展示。点击图片可查看大图。</sub></p>
+
+<table>
+  <tr>
+    <td width="50%" valign="top"><a href="docs/images/library.png"><img src="docs/images/library.png" alt="书架：浏览藏书、搜索与筛选"></a><p><strong>整理你的藏书</strong><br><sub>在书架中浏览、筛选与管理阅读状态。</sub></p></td>
+    <td width="50%" valign="top"><a href="docs/images/reader.png"><img src="docs/images/reader.png" alt="夜间阅读器与章节目录"></a><p><strong>留一点安静给阅读</strong><br><sub>夜间主题与章节目录，让故事继续。</sub></p></td>
   </tr>
 </table>
 
 ## 功能
 
-| 功能 | 说明 |
+| 阅读环节 | 可以做什么 |
 | --- | --- |
-| 图书导入 | 支持 EPUB、TXT、MOBI、PDF、ZIP/CBZ 漫画压缩包和图片 |
-| 书架管理 | 搜索、收藏、标签、系列分组和阅读状态；可将图书提交到公共书库 |
-| 阅读 | 调整字体、字号、行距和背景，切换日间与夜间主题；支持滚动阅读和轻点翻页 |
-| PDF | 原页缩放、缩略图导航、文本阅读、纸色和亮度调整 |
-| 漫画与图片 | 逐页阅读、缩放和页码跳转 |
-| 日文与翻译 | 日文阅读辅助、整书翻译、译稿审核和来源更新，需自行配置模型服务 |
-| 听书 | 支持在线语音和设备朗读，可调节语速 |
-| 阅读记录 | 保存阅读进度、书签和备注，登录同一账号即可跨设备续读 |
-| 账号与管理 | 邀请注册、权限管理、SQLite 备份恢复和个人 API |
+| **导入图书** | 支持 EPUB、TXT、MOBI、PDF、ZIP/CBZ 漫画压缩包和图片 |
+| **整理书架** | 搜索、收藏、标签、系列分组和阅读状态；可将图书提交到公共书库 |
+| **阅读小说** | 调整字体、字号、行距和背景，切换日间与夜间主题；支持滚动阅读和轻点翻页 |
+| **阅读 PDF** | 原页缩放、缩略图导航、文本阅读、纸色和亮度调整 |
+| **阅读漫画与图片** | 逐页阅读、缩放和页码跳转 |
+| **日文与翻译** | 日文阅读辅助、整书翻译、译稿审核和来源更新，需自行配置模型服务 |
+| **听书** | 支持在线语音和设备朗读，可调节语速 |
+| **接续阅读** | 保存阅读进度、书签和备注，登录同一账号即可跨设备续读 |
+| **账号与管理** | 邀请注册、权限管理、SQLite 备份恢复和个人 API |
+
+想先在电脑上试用，可以从下面的本地运行开始；准备放到自己的服务器上，请看 [自部署指南](docs/deployment.md)。
 
 ## 本地运行
 
