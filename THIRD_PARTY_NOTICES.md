@@ -13,7 +13,7 @@ README 截图中的名著封面与公版原文来源、署名和许可见 [截�
 | Noto Serif JP | https://github.com/notofonts/noto-cjk | [SIL OFL 1.1](docs/licenses/NotoSerifJP-OFL.txt) |
 | LXGW WenKai | https://github.com/lxgw/LxgwWenKai，通过 @hanzi.pro/webfonts-lxgw-wenkai 加载 | [SIL OFL 1.1](docs/licenses/LXGWWenKai-OFL.txt) |
 
-字体许可、版权声明和保留字体名称见对应文件。依赖中的字体由包管理器安装，不在源码中重复打包。
+Inter、Noto Serif SC 和 Noto Serif JP 的字体文件位于 `public/fonts/`；LXGW WenKai 通过 npm 依赖安装。各字体的版权声明见对应许可文件。
 
 ## 软件依赖
 
