@@ -18,6 +18,3 @@ README 截图中的名著封面与公版原文来源、署名和许可见 [截�
 ## 软件依赖
 
 前端依赖和版本记录在 package.json、package-lock.json；后端记录在 backend/requirements*.txt 与锁文件。React、Vite、Tailwind CSS、PDF.js、FastAPI、SQLAlchemy、Alembic 等第三方项目分别保留自己的许可。安装或分发打包版本时请一并遵守依赖许可。
-
-README 的组织参考来源列于项目首页的致谢部分；未复制模板的 Logo 或示例截图。
-

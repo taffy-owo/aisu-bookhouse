@@ -84,14 +84,14 @@
     "vite": "^8.0.12",
     "vitest": "^4.1.6"
   },
-  "description": "A self-hosted reading space for books, manga and PDF, with translation and audiobooks.",
+  "description": "Self-hosted ebook, manga and PDF reader with translation and text-to-speech.",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/taffy-owo/aisu-bookhouse-open-source.git"
+    "url": "https://github.com/taffy-owo/aisu-bookhouse.git"
   },
   "bugs": {
-    "url": "https://github.com/taffy-owo/aisu-bookhouse-open-source/issues"
+    "url": "https://github.com/taffy-owo/aisu-bookhouse/issues"
   },
-  "homepage": "https://github.com/taffy-owo/aisu-bookhouse-open-source#readme"
+  "homepage": "https://github.com/taffy-owo/aisu-bookhouse#readme"
 }

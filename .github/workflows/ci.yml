@@ -31,5 +31,6 @@ jobs:
           cache: pip
           cache-dependency-path: backend/requirements-dev.lock
       - run: python -m pip install --require-hashes -r backend/requirements-dev.lock
-      - run: python -m pytest backend/tests -q
+      - run: python -m pytest tests -q
+        working-directory: backend
 
