@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="description" content="爱素书屋" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#1A1320" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <script>
+      (() => {
+        try {
+          const isDark = window.localStorage.getItem('aisu-theme') !== 'light';
+          document.documentElement.classList.toggle('dark', isDark);
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', isDark ? '#1A1320' : '#E6DCD7');
+        } catch {
+          document.documentElement.classList.add('dark');
+        }
+      })();
+    </script>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=20261018-vector" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/aisu-lily-favicon-32.png?v=20261018-vector" />
+    <link rel="shortcut icon" href="/favicon.svg?v=20261018-vector" />
+    <link rel="apple-touch-icon" href="/aisu-apple-touch.png?v=20260910-lily" />
+    <link rel="manifest" href="/site.webmanifest?v=20260910-lily" />
+    <link rel="stylesheet" href="/fonts-ui.css" />
+    <link id="aisu-reader-fonts" rel="stylesheet" href="/fonts-reader.css" />
+    <title>爱素书屋</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

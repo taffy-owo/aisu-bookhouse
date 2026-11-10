@@ -1,0 +1,16 @@
+name: 问题反馈
+description: 报告能够复现的问题
+body:
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      description: 描述发生了什么、预期行为以及设备和浏览器；请去除私人信息。
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: 截图与版本
+      description: 可附截图、提交版本或已脱敏的错误信息。
+

@@ -1,0 +1,15 @@
+export const SUPPORTED_FORMATS = [
+  'EPUB',
+  'MOBI',
+  'PDF',
+  'TXT',
+  'CBZ',
+  'ZIP 图片包',
+  'JPG',
+  'PNG',
+  'WEBP',
+  'AVIF',
+  'GIF',
+  'BMP',
+  'JFIF',
+] as const;

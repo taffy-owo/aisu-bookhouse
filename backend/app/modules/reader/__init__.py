@@ -1,0 +1,2 @@
+"""Reader resource module."""
+
