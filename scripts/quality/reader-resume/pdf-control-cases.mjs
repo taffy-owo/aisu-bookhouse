@@ -20,7 +20,17 @@ export async function verifyPdfAppearance({ command, ensure, evaluate, fresh, wa
       filters.push(await evaluate(`getComputedStyle(${canvas}).filter`));
       ensure(await evaluate(`${canvas}===pdfAppearanceCanvas&&${canvas}.toDataURL()===pdfAppearancePixels&&Math.abs(${scroll}.scrollTop-${top})<1`),width+' PDF '+theme+' changes display without replacing the bitmap or moving the page');
     }
-    ensure(new Set(filters).size===4&&filters[3].includes('invert(1)'),width+' PDF themes apply distinct colors to original pages and scanned fallbacks',filters);
+    ensure(new Set(filters).size===4,width+' PDF themes apply distinct appearances to original pages and scanned fallbacks',filters);
+    const nightPixels = await evaluate(`(()=>{
+      const source=document.createElement('canvas'),output=document.createElement('canvas');source.width=output.width=5;source.height=output.height=1;
+      const input=source.getContext('2d'),result=output.getContext('2d');
+      ['#000000','#808080','#ffffff','#ff0000','#0000ff'].forEach((color,index)=>{input.fillStyle=color;input.fillRect(index,0,1,1)});
+      result.filter=getComputedStyle(${canvas}).filter;result.drawImage(source,0,0);
+      const data=result.getImageData(0,0,5,1).data;return Array.from({length:5},(_,i)=>Array.from(data.slice(i*4,i*4+3)));
+    })()`);
+    ensure(nightPixels[0][0]<nightPixels[1][0]&&nightPixels[1][0]<nightPixels[2][0]&&nightPixels[2][0]<200
+      &&nightPixels[3][0]>nightPixels[3][1]&&nightPixels[3][0]>nightPixels[3][2]
+      &&nightPixels[4][2]>nightPixels[4][0]&&nightPixels[4][2]>nightPixels[4][1],width+' PDF night mode dims white while preserving grayscale order and illustration colors',nightPixels);
     await evaluate(`${control('PDF 纸面亮度')}.focus()`);
     for (let step=0;step<5;step++) {
       await command('Input.dispatchKeyEvent',{type:'keyDown',key:'ArrowLeft',code:'ArrowLeft',windowsVirtualKeyCode:37});

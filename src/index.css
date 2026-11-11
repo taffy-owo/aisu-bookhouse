@@ -1501,7 +1501,8 @@ html.dark .grain {
 .pdf-reader-shell.reader-theme-white { --pdf-page-filter: brightness(1); --pdf-page-background: #fff; }
 .pdf-reader-shell.reader-theme-paper { --pdf-page-filter: brightness(0.8) sepia(0.42); }
 .pdf-reader-shell.reader-theme-green { --pdf-page-filter: brightness(0.72) sepia(0.3) hue-rotate(45deg) saturate(0.65); }
-.pdf-reader-shell.reader-theme-dark { --pdf-page-filter: invert(1) hue-rotate(180deg) brightness(0.7) contrast(0.82) sepia(0.12); }
+/* Original pages contain illustrations as well as text; dim without reversing their colors. */
+.pdf-reader-shell.reader-theme-dark { --pdf-page-filter: brightness(0.62); }
 .pdf-canvas-page { background: color-mix(in srgb, var(--pdf-page-background, var(--reader-page)) calc(var(--pdf-page-brightness) * 100%), #000); }
 /* Filter only the bitmap: controls, page geometry and source PDF stay intact. */
 .pdf-canvas-page > canvas { filter: var(--pdf-page-filter) brightness(var(--pdf-page-brightness)); }
