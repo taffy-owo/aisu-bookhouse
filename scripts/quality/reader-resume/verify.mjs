@@ -15,7 +15,7 @@ import { verifyReaderPreferences } from './preference-cases.mjs';
 import { verifyReaderNavigationUi } from './navigation-ui-cases.mjs';
 import { verifyReaderCatalog } from './catalog-cases.mjs';
 import { verifyImageControls } from './image-control-cases.mjs';
-import { verifyPdfAppearance, verifyPdfControls, verifyPdfMiddleScroll } from './pdf-control-cases.mjs';
+import { verifyPdfAppearance, verifyPdfControls, verifyPdfMiddleScroll, verifyPdfSelection } from './pdf-control-cases.mjs';
 import { verifyBookDialogs } from './book-dialog-cases.mjs';
 import { verifyBookActions } from './book-action-cases.mjs';
 import { verifyTranslationReview } from './translation-review-cases.mjs';
@@ -31,6 +31,7 @@ const root = fileURLToPath(new URL('../../../', import.meta.url));
 const pdfControlsOnly = process.argv.includes('--pdf-controls');
 const pdfMiddleScrollOnly = process.argv.includes('--pdf-middle-scroll');
 const pdfAppearanceOnly = process.argv.includes('--pdf-appearance');
+const pdfSelectionOnly = process.argv.includes('--pdf-selection');
 const translationReviewOnly = process.argv.includes('--translation-review');
 const appendedProgressOnly = process.argv.includes('--appended-progress');
 const chapterProgressOnly = process.argv.includes('--chapter-progress');
@@ -163,6 +164,8 @@ try {
     await verifyBookActions({ command, ensure, evaluate, fresh, wait, click, sleep, screenshot, baseline: process.argv.includes('--baseline'), reportDir });
   } else if (bookDialogsOnly) {
     await verifyBookDialogs({ command, ensure, evaluate, fresh, wait, click, sleep, screenshot, baseline: process.argv.includes('--baseline'), reportDir });
+  } else if (pdfSelectionOnly) {
+    await verifyPdfSelection({ command, ensure, evaluate, fresh, wait, click, sleep });
   } else if (pdfAppearanceOnly) {
     await verifyPdfAppearance({ command, ensure, evaluate, fresh, wait, click, sleep, screenshot });
   } else if (pdfMiddleScrollOnly) {

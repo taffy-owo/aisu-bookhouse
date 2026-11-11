@@ -1,6 +1,43 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
+export async function verifyPdfSelection({ command, ensure, evaluate, fresh, wait, click, sleep }) {
+  await fresh(1536, 864, false, 'pdf&pdfPages=3', false);
+  const layer = `document.querySelector('[data-pdf-page="1"] .pdf-text-layer')`;
+  await wait(`${layer}?.textContent.includes('Reading page 1, line 2.')`);
+  ensure(await evaluate(`getComputedStyle(${layer}.querySelector('span'),'::selection').color==='rgba(0, 0, 0, 0)'`),'PDF selection highlights the bitmap without drawing duplicate text');
+  for (const zoom of [false, true]) {
+    if (zoom) {
+      await evaluate('getSelection().removeAllRanges()');
+      await click(`document.querySelector('[aria-label="放大"]')`);
+      await sleep(400);
+      await wait(`${layer}?.textContent.includes('Reading page 1, line 2.')`);
+    }
+    const before = await evaluate(`({top:document.querySelector('.pdf-reader-scroll').scrollTop,visible:!document.querySelector('.pdf-reader-toolbar').inert})`);
+    const points = await evaluate(`(()=>{
+      const spans=[...${layer}.querySelectorAll('span')];
+      const a=spans.find(e=>e.textContent.startsWith('Reading page 1, line 1.'));
+      const b=spans.find(e=>e.textContent.startsWith('Reading page 1, line 2.'));
+      const r1=a.getBoundingClientRect(),r2=b.getBoundingClientRect();
+      return {start:{x:r1.left+0.5,y:r1.top+r1.height/2},end:{x:r2.right-0.5,y:r2.top+r2.height/2},expected:a.textContent+' '+b.textContent};
+    })()`);
+    await command('Input.dispatchMouseEvent',{type:'mousePressed',button:'left',buttons:1,clickCount:1,...points.start});
+    for(let i=1;i<=8;i++) await command('Input.dispatchMouseEvent',{type:'mouseMoved',button:'left',buttons:1,x:points.start.x+(points.end.x-points.start.x)*i/8,y:points.start.y+(points.end.y-points.start.y)*i/8});
+    await command('Input.dispatchMouseEvent',{type:'mouseReleased',button:'left',clickCount:1,...points.end});
+    const selected = await evaluate(`getSelection().toString().replace(/\\s+/g,' ').trim()`);
+    ensure(selected===points.expected,'PDF mouse drag selects consecutive lines'+(zoom?' after zoom':''),{selected,expected:points.expected});
+    ensure(await evaluate(`Math.abs(document.querySelector('.pdf-reader-scroll').scrollTop-${before.top})<1&&(!document.querySelector('.pdf-reader-toolbar').inert)===${before.visible}`),'PDF selection keeps scroll and controls unchanged');
+    await command('Input.dispatchKeyEvent',{type:'keyDown',key:'c',code:'KeyC',windowsVirtualKeyCode:67,modifiers:2});
+    await command('Input.dispatchKeyEvent',{type:'keyUp',key:'c',code:'KeyC',windowsVirtualKeyCode:67,modifiers:2});
+    await evaluate(`(()=>{const box=document.createElement('textarea');box.id='copy-test';box.style='position:fixed;top:0;left:0;z-index:9999';document.body.append(box);box.focus()})()`);
+    await command('Input.dispatchKeyEvent',{type:'keyDown',key:'v',code:'KeyV',windowsVirtualKeyCode:86,modifiers:2});
+    await command('Input.dispatchKeyEvent',{type:'keyUp',key:'v',code:'KeyV',windowsVirtualKeyCode:86,modifiers:2});
+    await sleep(100);
+    ensure(await evaluate(`document.querySelector('#copy-test').value.replace(/\\s+/g,' ').trim()`)===selected,'PDF Ctrl+C copies selected text for pasting');
+    await evaluate(`document.querySelector('#copy-test').remove()`);
+  }
+}
+
 export async function verifyPdfAppearance({ command, ensure, evaluate, fresh, wait, click, sleep, screenshot }) {
   const control = label => `document.querySelector('[aria-label="${label}"]')`;
   const canvas = `document.querySelector('[data-pdf-page="2"] canvas')`;

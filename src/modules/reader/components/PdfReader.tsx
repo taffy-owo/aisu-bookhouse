@@ -43,6 +43,7 @@ import { DEFAULT_READER_PREFERENCES, type ReaderPreferences } from '../services/
 import { readerBodyFontClass } from '../constants/readerDisplayClasses';
 import { ReaderFontSizeControl, ReaderSettingsPanel } from './ReaderSettingsPanel';
 import { PdfThumbnailSidebar } from './PdfThumbnailSidebar';
+import { PdfTextLayer } from './PdfTextLayer';
 import { getAutoParagraphAlignment } from '../utils/readerParagraphAlignment';
 import type { ReaderEditionSwitch } from '../hooks/useReaderEditionSwitch';
 import { isMediaPageVisible } from '../services/mediaReadingProgress';
@@ -1272,6 +1273,7 @@ function PdfCanvasPage({ document, onCheckUpdate, onRetry, onRendered, onRenderU
   return (
     <div className="pdf-canvas-page relative overflow-hidden shadow-[0_10px_36px_rgba(0,0,0,0.24)]" ref={hostRef} style={hostStyle}>
       {isNearViewport && <canvas aria-label={`PDF 第 ${pageNumber} 页`} className="block h-full w-full" ref={canvasRef} />}
+      {isNearViewport && !renderError && <PdfTextLayer document={document} pageNumber={pageNumber} pageWidth={pageWidth} />}
       {!isNearViewport && <div className="absolute inset-0 animate-pulse" />}
       {renderError && <div className="absolute inset-0 grid place-items-center bg-[color:var(--reader-page)] px-4 text-center text-xs text-[color:var(--reader-muted)]"><div><p>第 {pageNumber} 页渲染失败</p>{onRetry && <button className="mt-3 rounded-md border border-[color:var(--reader-hairline)] px-3 py-2 text-[color:var(--reader-ink)] transition hover:bg-current/10" onClick={(event) => { event.stopPropagation(); onRetry(pageNumber); }} type="button">重试第 {pageNumber} 页</button>}</div></div>}
     </div>
