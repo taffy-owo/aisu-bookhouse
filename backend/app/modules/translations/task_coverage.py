@@ -1,6 +1,7 @@
 """Match translation attempts by their source chapters, not just their book."""
 
 from app.modules.books.source_identity import source_url_identity
+from app.modules.auth.api_token_service import utc
 from app.modules.translations.models import WholeBookTranslationJobRecord
 
 
@@ -25,7 +26,7 @@ def covers_failed_attempt(failed: WholeBookTranslationJobRecord, published: Whol
         and published.id != failed.id
         and published.status in {"ready", "completed"}
         and published.completed_chapters == published.total_chapters
-        and published.updated_at > failed.updated_at
+        and utc(published.updated_at) > utc(failed.updated_at)
         and published.job_kind == failed.job_kind
         and set(required).issubset(source_episode_urls(published))
     )

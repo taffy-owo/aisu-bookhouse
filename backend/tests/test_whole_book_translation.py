@@ -1500,6 +1500,13 @@ def test_notifications_match_failed_attempt_to_newer_successful_work(
             finished_at=None,
         ))
         session.commit()
+        # External writers used ISO timestamps with UTC offsets; ORM writes omit
+        # the offset in SQLite. Both formats exist in the production history.
+        session.connection().exec_driver_sql(
+            "UPDATE whole_book_translation_jobs SET updated_at = ? WHERE id = ?",
+            ((newer if success_is_newer else older).isoformat(), "newer-success-job"),
+        )
+        session.commit()
 
     notifications = client.get("/api/v1/translations/notifications", headers=auth_headers).json()
 
