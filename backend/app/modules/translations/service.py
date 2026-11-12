@@ -21,8 +21,8 @@ from uuid import uuid4
 
 from fastapi import HTTPException, status
 import httpx
-from sqlalchemy import and_, case, exists, func, or_, select, update
-from sqlalchemy.orm import Session, aliased
+from sqlalchemy import case, func, or_, select, update
+from sqlalchemy.orm import Session
 
 from app.core.config import Settings
 from app.core.ai_credentials import is_platform_ai_credential
@@ -43,6 +43,7 @@ from app.modules.books.source_episode_matching import extract_episode_number, ma
 from app.modules.books.repository import SqlAlchemyBookRepository
 from app.modules.books.domain import Book
 from app.modules.books.models import BookRecord
+from app.modules.translations.task_coverage import covers_failed_attempt, source_episode_urls
 from app.modules.japanese.service import translate_japanese_catalog_titles
 from app.modules.processing.service import process_uploaded_book
 from app.modules.reader.service import get_asset_title, split_paragraphs, strip_leading_chapter_title
@@ -600,27 +601,19 @@ def get_translation_notifications(user_id: str, session: Session) -> WholeBookTr
             ),
     )
     job = WholeBookTranslationJobRecord
-    newer_success = aliased(WholeBookTranslationJobRecord)
-    superseded_failed = and_(
-        job.status == "failed",
-        exists(
-            select(1).where(
-                newer_success.user_id == job.user_id,
-                newer_success.id != job.id,
-                newer_success.status.in_({"review", "ready", "completed"}),
-                newer_success.updated_at > job.updated_at,
-                newer_success.job_kind == job.job_kind,
-                or_(
-                    and_(job.job_kind == "source_update", newer_success.book_id == job.book_id),
-                    and_(
-                        job.job_kind == "whole_book",
-                        newer_success.source_url == job.source_url,
-                    ),
-                ),
-            )
-        ),
-    )
-    conditions = (*conditions, ~superseded_failed)
+    failed = session.scalars(select(job).where(*conditions, job.status == "failed")).all()
+    if failed:
+        published = session.scalars(select(job).where(
+            job.user_id == user_id,
+            job.status.in_({"ready", "completed"}),
+            job.completed_chapters == job.total_chapters,
+        )).all()
+        resolved_ids = [
+            attempt.id for attempt in failed
+            if any(covers_failed_attempt(attempt, done) for done in published)
+        ]
+        if resolved_ids:
+            conditions = (*conditions, job.id.not_in(resolved_ids))
     unread_count, active_count = session.execute(select(
         func.sum(case((job.status.in_({"review", "ready", "completed", "failed"}) & job.acknowledged.is_(False), 1), else_=0)),
         func.sum(case((job.status.in_(ACTIVE_STATUSES), 1), else_=0)),
@@ -1715,6 +1708,7 @@ def to_public(
         job_kind=record.job_kind if record.job_kind in {"whole_book", "source_update"} else "whole_book",
         source_url=record.source_url,
         source_provider=record.source_provider,
+        source_episode_urls=source_episode_urls(record),
         title=record.title,
         author=record.author,
         # Older workers persisted `completed`; expose the current terminal name.

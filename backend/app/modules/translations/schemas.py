@@ -23,6 +23,7 @@ class WholeBookTranslationJobPublic(BaseModel):
     job_kind: Literal["whole_book", "source_update"] = "whole_book"
     source_url: str
     source_provider: str
+    source_episode_urls: list[str] = Field(default_factory=list)
     title: str
     author: str
     status: TranslationJobStatus

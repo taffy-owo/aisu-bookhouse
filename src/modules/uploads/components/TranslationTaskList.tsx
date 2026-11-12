@@ -119,8 +119,8 @@ function TranslationTaskRow({ actionError, isBusy, isSuperseded, job, modelOptio
   onResume: (jobId: string) => void;
   onRetry: (jobId: string) => void;
 }) {
-  const statusMessage = isSuperseded ? '已有更新的译稿完成，请查看最新译稿任务；当前失败记录无需重试' : getWholeBookTranslationStatusMessage(job);
-  const Icon = isBusy ? LoaderCircle : {
+  const statusMessage = isSuperseded ? '对应章节已由后续任务发布，以下保留本次尝试的失败进度。' : getWholeBookTranslationStatusMessage(job);
+  const Icon = isBusy ? LoaderCircle : isSuperseded ? Clock : {
     queued: LoaderCircle, processing: LoaderCircle, paused: Pause, waiting_quota: Clock,
     review: BookOpen, ready: Check, rejected: CircleMinus, failed: AlertCircle,
   }[job.status];
@@ -131,7 +131,8 @@ function TranslationTaskRow({ actionError, isBusy, isSuperseded, job, modelOptio
           'mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full',
           job.status === 'ready' && 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-300',
           job.status === 'review' && 'bg-pink-50 text-accent dark:bg-pink-950/20 dark:text-peach',
-          job.status === 'failed' && 'bg-red-50 text-red-600 dark:bg-red-950/30 dark:text-red-300',
+          job.status === 'failed' && !isSuperseded && 'bg-red-50 text-red-600 dark:bg-red-950/30 dark:text-red-300',
+          isSuperseded && 'bg-stone-100 text-stone-500 dark:bg-white/[0.08] dark:text-night-soft',
           job.status === 'waiting_quota' && 'bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-300',
           (job.status === 'paused' || job.status === 'rejected') && 'bg-stone-100 text-stone-500 dark:bg-white/[0.08] dark:text-night-soft',
           (job.status === 'queued' || job.status === 'processing') && 'bg-pink-50 text-accent dark:bg-pink-950/20 dark:text-peach',
@@ -141,7 +142,7 @@ function TranslationTaskRow({ actionError, isBusy, isSuperseded, job, modelOptio
         <div className="min-w-0 flex-[1_1_10rem]">
           <p className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
             <span className="min-w-0 max-w-full truncate text-sm font-medium text-stone-900 dark:text-night-ink" title={job.title}>{job.title}</span>
-            <span className="text-[11px] text-stone-500 dark:text-stone-400">{getWholeBookTranslationStatusLabel(job)}</span>
+            <span className="text-[11px] text-stone-500 dark:text-stone-400">{isSuperseded ? '历史失败记录' : getWholeBookTranslationStatusLabel(job)}</span>
           </p>
           <div className="mt-1 text-xs leading-5 text-stone-500 dark:text-stone-400">
             {!isSuperseded && (job.status === 'failed' || job.status === 'waiting_quota')
@@ -164,7 +165,7 @@ function TranslationTaskRow({ actionError, isBusy, isSuperseded, job, modelOptio
             </span>
           )}
           <span className="mt-1 flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1">
-            {!['ready', 'review', 'rejected'].includes(job.status) && (
+            {!isSuperseded && !['ready', 'review', 'rejected'].includes(job.status) && (
               <label className="inline-flex min-w-0 max-w-full items-center gap-1 text-[11px] text-stone-400">
                 并发
                 <select
@@ -180,7 +181,7 @@ function TranslationTaskRow({ actionError, isBusy, isSuperseded, job, modelOptio
                 </select>
               </label>
             )}
-            {MODEL_CHANGE_STATUSES.includes(job.status) && modelOptions.length > 0 && (
+            {!isSuperseded && MODEL_CHANGE_STATUSES.includes(job.status) && modelOptions.length > 0 && (
               <label className="inline-flex min-w-0 max-w-full items-center gap-1 text-[11px] text-stone-400">
                 渠道
                 <select

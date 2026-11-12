@@ -27,6 +27,7 @@ export type WholeBookTranslationJob = {
   request_concurrency: number;
   pause_requested: boolean;
   source_provider: string;
+  source_episode_urls?: string[];
   source_url: string;
   stage: string;
   status: 'queued' | 'processing' | 'paused' | 'waiting_quota' | 'review' | 'ready' | 'rejected' | 'failed';
@@ -36,12 +37,16 @@ export type WholeBookTranslationJob = {
 };
 
 export function isSupersededTranslationFailure(job: WholeBookTranslationJob, jobs: readonly WholeBookTranslationJob[]): boolean {
-  return job.status === 'failed' && jobs.some((candidate) => (
+  const required = job.source_episode_urls ?? [];
+  return job.status === 'failed' && required.length > 0 && required.length === job.total_chapters && jobs.some((candidate) => (
     candidate.id !== job.id
-    && (candidate.status === 'review' || candidate.status === 'ready')
+    && candidate.status === 'ready'
+    && candidate.completed_chapters === candidate.total_chapters
+    && candidate.source_episode_urls?.length === candidate.total_chapters
     && candidate.job_kind === job.job_kind
-    && (job.job_kind === 'whole_book' ? candidate.source_url === job.source_url : candidate.book_id === job.book_id)
+    && (job.job_kind === 'whole_book' ? candidate.source_url === job.source_url : Boolean(job.book_id) && candidate.book_id === job.book_id)
     && compareAppTimestamps(candidate.updated_at, job.updated_at) > 0
+    && required.every((url) => candidate.source_episode_urls?.includes(url))
   ));
 }
 

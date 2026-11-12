@@ -9,9 +9,11 @@ describe('book translation status selection', () => {
   const failed = {
     id: 'old-failed', book_id: 'book', job_kind: 'source_update',
     source_url: 'https://kakuyomu.jp/works/123', status: 'failed',
+    total_chapters: 2, completed_chapters: 0,
+    source_episode_urls: ['https://kakuyomu.jp/works/123/episodes/1', 'https://kakuyomu.jp/works/123/episodes/2'],
     acknowledged: false, updated_at: '2026-11-01T00:00:00Z',
   } as WholeBookTranslationJob;
-  const review = { ...failed, id: 'new-draft', status: 'review', updated_at: '2026-11-02T00:00:00Z' } as WholeBookTranslationJob;
+  const review = { ...failed, id: 'new-draft', status: 'review', completed_chapters: 2, updated_at: '2026-11-02T00:00:00Z' } as WholeBookTranslationJob;
 
   it('does not revive an older failure when a reviewed draft is published or acknowledged', () => {
     expect(selectBookTranslationJob([review, failed], 'book')).toBe(review);
@@ -40,6 +42,24 @@ describe('book translation status selection', () => {
     expect(isSupersededTranslationFailure(whole, [whole, ready])).toBe(true);
     expect(isSupersededTranslationFailure(whole, [whole, { ...ready, source_url: 'https://kakuyomu.jp/works/456' }])).toBe(false);
     expect(isSupersededTranslationFailure(failed, [failed, { ...review, book_id: 'other-book' }])).toBe(false);
+  });
+
+  it('requires every failed source chapter to have been published', () => {
+    const ready = { ...review, status: 'ready' } as WholeBookTranslationJob;
+    const otherChapter = { ...ready, total_chapters: 1, completed_chapters: 1, source_episode_urls: ['https://kakuyomu.jp/works/123/episodes/3'] };
+    const partial = { ...otherChapter, source_episode_urls: [failed.source_episode_urls![0]] };
+    expect(isSupersededTranslationFailure(failed, [ready])).toBe(true);
+    expect(isSupersededTranslationFailure(failed, [otherChapter])).toBe(false);
+    expect(isSupersededTranslationFailure(failed, [partial])).toBe(false);
+    expect(selectBookTranslationJob([{ ...ready, acknowledged: true }, { ...failed, source_episode_urls: [otherChapter.source_episode_urls[0]], total_chapters: 1 }], 'book')?.id).toBe(failed.id);
+  });
+
+  it('preserves failures when the newer draft is unpublished or lacks chapter evidence', () => {
+    const ready = { ...review, status: 'ready' } as WholeBookTranslationJob;
+    expect(isSupersededTranslationFailure(failed, [review])).toBe(false);
+    expect(isSupersededTranslationFailure(failed, [{ ...ready, completed_chapters: 1 }])).toBe(false);
+    expect(isSupersededTranslationFailure(failed, [{ ...ready, source_episode_urls: [] }])).toBe(false);
+    expect(isSupersededTranslationFailure({ ...failed, source_episode_urls: [] }, [ready])).toBe(false);
   });
 });
 

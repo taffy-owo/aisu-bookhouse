@@ -1403,15 +1403,20 @@ def test_notifications_hide_legacy_translation_draft_for_deleted_book(
 
 
 @pytest.mark.parametrize(
-    ("failed_kind", "successful_kind", "failed_has_book", "success_is_newer", "hidden"),
+    ("failed_kind", "successful_kind", "failed_has_book", "success_is_newer", "successful_status", "coverage", "hidden"),
     [
-        ("source_update", "source_update", True, True, True),
-        ("whole_book", "whole_book", False, True, True),
-        ("whole_book", "whole_book", True, True, True),
-        ("source_update", "whole_book", True, True, False),
-        ("whole_book", "source_update", True, True, False),
-        ("source_update", "source_update", True, False, False),
-        ("whole_book", "whole_book", True, False, False),
+        ("source_update", "source_update", True, True, "ready", "same", True),
+        ("whole_book", "whole_book", False, True, "ready", "same", True),
+        ("whole_book", "whole_book", True, True, "completed", "same", True),
+        ("source_update", "whole_book", True, True, "ready", "same", False),
+        ("whole_book", "source_update", True, True, "ready", "same", False),
+        ("source_update", "source_update", True, False, "ready", "same", False),
+        ("whole_book", "whole_book", True, False, "ready", "same", False),
+        ("source_update", "source_update", True, True, "ready", "other", False),
+        ("source_update", "source_update", True, True, "ready", "partial", False),
+        ("source_update", "source_update", True, True, "ready", "missing", False),
+        ("source_update", "source_update", True, True, "ready", "incomplete", False),
+        ("source_update", "source_update", True, True, "review", "same", False),
     ],
 )
 def test_notifications_match_failed_attempt_to_newer_successful_work(
@@ -1421,6 +1426,8 @@ def test_notifications_match_failed_attempt_to_newer_successful_work(
     successful_kind: str,
     failed_has_book: bool,
     success_is_newer: bool,
+    successful_status: str,
+    coverage: str,
     hidden: bool,
 ) -> None:
     from app.modules.books.models import BookRecord
@@ -1431,6 +1438,17 @@ def test_notifications_match_failed_attempt_to_newer_successful_work(
         book_id = session.query(BookRecord.id).filter(BookRecord.owner_id == user_id).first()[0]
         older = datetime(2026, 10, 18, 16, 31, tzinfo=timezone.utc)
         newer = datetime(2026, 10, 18, 22, 2, tzinfo=timezone.utc)
+        episodes = [
+            {"index": index, "title": f"第{index}话", "url": f"https://kakuyomu.jp/works/superseded/episodes/{index}"}
+            for index in (1, 2)
+        ]
+        published_episodes = {
+            "same": episodes,
+            "other": [{**episodes[0], "url": "https://kakuyomu.jp/works/superseded/episodes/3"}],
+            "partial": episodes[:1],
+            "missing": [],
+            "incomplete": episodes,
+        }[coverage]
         common = {
             "user_id": user_id,
             "source_url": "https://kakuyomu.jp/works/superseded",
@@ -1438,14 +1456,12 @@ def test_notifications_match_failed_attempt_to_newer_successful_work(
             "title": "被替代任务",
             "author": "作者",
             "progress": 100,
-            "total_chapters": 1,
             "current_chapter_index": None,
             "model": "gemini-3-flash",
             "provider_base_url": "https://provider.example.com/v1",
             "provider_api_key_encrypted": "encrypted",
             "metadata_json": {},
             "translated_metadata_json": {},
-            "catalog_json": [],
             "memory_json": {},
             "quality_report_json": {},
             "acknowledged": False,
@@ -1460,6 +1476,8 @@ def test_notifications_match_failed_attempt_to_newer_successful_work(
             id="superseded-failed-job",
             status="failed",
             stage="failed",
+            catalog_json=episodes if coverage != "missing" else [],
+            total_chapters=2,
             completed_chapters=0,
             message="失败",
             error_message="provider_rejected",
@@ -1471,10 +1489,12 @@ def test_notifications_match_failed_attempt_to_newer_successful_work(
             book_id=book_id,
             job_kind=successful_kind,
             id="newer-success-job",
-            status="ready" if successful_kind == "whole_book" else "review",
-            stage="ready" if successful_kind == "whole_book" else "review",
-            completed_chapters=1,
-            message="等待审核",
+            status=successful_status,
+            stage=successful_status,
+            catalog_json=published_episodes,
+            total_chapters=len(published_episodes) or 2,
+            completed_chapters=1 if coverage == "incomplete" else len(published_episodes) or 2,
+            message="已完成" if successful_status != "review" else "等待审核",
             error_message=None,
             updated_at=newer if success_is_newer else older,
             finished_at=None,

@@ -15,6 +15,7 @@ function job(overrides: Partial<WholeBookTranslationJob>): WholeBookTranslationJ
     max_concurrency: 1, pause_requested: false, acknowledged: false,
     current_chapter_index: null, finished_at: null, quality_status: 'pending',
     quality_issue_count: 0, quota_resume_at: null, source_provider: 'kakuyomu',
+    source_episode_urls: Array.from({ length: 10 }, (_, index) => `https://kakuyomu.jp/works/123/episodes/${index + 1}`),
     ...overrides,
   };
 }
@@ -36,8 +37,10 @@ it('retires a failed whole-book attempt when a later attempt publishes the same 
       updated_at: '2026-11-02T00:00:00Z' }),
     job({}),
   ]);
-  expect(markup).toContain('当前失败记录无需重试');
+  expect(markup).toContain('历史失败记录');
+  expect(markup).toContain('对应章节已由后续任务发布');
   expect(markup).not.toContain('data-task-focus-control="retry"');
+  expect(markup).not.toContain('<select');
 });
 
 it('keeps a failed update actionable after the whole book was published', () => {
@@ -46,6 +49,17 @@ it('keeps a failed update actionable after the whole book was published', () => 
       updated_at: '2026-11-02T00:00:00Z' }),
     job({ job_kind: 'source_update', book_id: 'book' }),
   ]);
-  expect(markup).not.toContain('当前失败记录无需重试');
+  expect(markup).not.toContain('历史失败记录');
+  expect(markup).toContain('data-task-focus-control="retry"');
+});
+
+it('does not retire an update when a different source chapter was published', () => {
+  const markup = render([
+    job({ id: 'ready', job_kind: 'source_update', book_id: 'book', status: 'ready',
+      completed_chapters: 1, total_chapters: 1, source_episode_urls: ['https://kakuyomu.jp/works/123/episodes/11'],
+      updated_at: '2026-11-02T00:00:00Z' }),
+    job({ job_kind: 'source_update', book_id: 'book' }),
+  ]);
+  expect(markup).not.toContain('历史失败记录');
   expect(markup).toContain('data-task-focus-control="retry"');
 });
