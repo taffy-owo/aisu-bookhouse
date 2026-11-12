@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { AlertCircle, BookOpen, Check, ChevronDown, ChevronUp, CircleMinus, Clock, LoaderCircle, Pause, Play, RotateCcw, Trash2 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { getBookDetailPath } from '../../../config/routes';
 import { cn } from '../../../shared/utils/cn';
 import { parseAppDate } from '../../../shared/utils/formatDate';
@@ -27,6 +27,10 @@ export function TranslationTaskList({ actionErrors, busyJobIds, disabled = false
   onResume: (jobId: string) => void;
   onRetry: (jobId: string) => void;
 }) {
+  const [searchParams] = useSearchParams();
+  const focusedTaskId = searchParams.get('task');
+  const [filterState, setFilter] = useState({ value: 'all', taskId: focusedTaskId });
+  const filter = filterState.taskId === focusedTaskId ? filterState.value : 'all';
   const [isHistoryExpanded, setIsHistoryExpanded] = useState(false);
   const supersededJobIds = useMemo(() => {
     return new Set(
@@ -44,7 +48,17 @@ export function TranslationTaskList({ actionErrors, busyJobIds, disabled = false
     () => jobs.filter((job) => !CURRENT_STATUSES.includes(job.status) || supersededJobIds.has(job.id)),
     [jobs, supersededJobIds],
   );
-  const visibleHistoryJobs = isHistoryExpanded ? historyJobs : historyJobs.slice(0, COLLAPSED_HISTORY_COUNT);
+  const filters = [
+    { value: 'all', label: '全部', count: jobs.length },
+    { value: 'active', label: '进行中', count: currentJobs.filter((job) => ['queued', 'processing'].includes(job.status)).length },
+    { value: 'attention', label: '待处理', count: currentJobs.filter((job) => !['queued', 'processing'].includes(job.status)).length },
+    { value: 'history', label: '已结束', count: historyJobs.length },
+  ];
+  const visibleCurrentJobs = filter === 'history' ? [] : currentJobs.filter((job) => filter === 'all'
+    || (filter === 'active' ? ['queued', 'processing'].includes(job.status) : !['queued', 'processing'].includes(job.status)));
+  const isTargetInHistory = historyJobs.some((job) => job.id === focusedTaskId);
+  const visibleHistoryJobs = !['all', 'history'].includes(filter) ? []
+    : isHistoryExpanded || isTargetInHistory ? historyJobs : historyJobs.slice(0, COLLAPSED_HISTORY_COUNT);
 
   useEffect(() => {
     if (historyJobs.length <= COLLAPSED_HISTORY_COUNT) {
@@ -55,10 +69,14 @@ export function TranslationTaskList({ actionErrors, busyJobIds, disabled = false
   if (!jobs.length) return null;
 
   return (
-    <section className="mb-5 border-b border-stone-200 pb-5 dark:border-white/10">
-      <h3 className="text-xs font-semibold text-stone-500 dark:text-stone-400">AI 翻译</h3>
-      <div className="mt-2 divide-y divide-stone-100 dark:divide-white/[0.07]">
-        {currentJobs.map((job) => (
+    <section>
+      <div aria-label="筛选翻译任务" className="flex gap-4 overflow-x-auto border-b border-ink/10 dark:border-white/10">
+        {filters.map((item) => <button aria-pressed={filter === item.value} className={cn('min-h-11 shrink-0 border-b-2 px-1 text-sm transition-colors', filter === item.value ? 'border-accent font-medium text-ink dark:border-peach dark:text-night-ink' : 'border-transparent text-stone-500 hover:text-accent dark:text-stone-400')} key={item.value} onClick={() => setFilter({ value: item.value, taskId: focusedTaskId })} type="button">
+          {item.label}<span className="ml-1.5 text-xs tabular-nums opacity-65">{item.count}</span>
+        </button>)}
+      </div>
+      <div className="mt-2 divide-y divide-ink/[0.08] dark:divide-white/[0.07]">
+        {visibleCurrentJobs.map((job) => (
           <TranslationTaskRow
             actionError={actionErrors[job.id]}
             isBusy={disabled || busyJobIds.has(job.id)}
@@ -91,7 +109,8 @@ export function TranslationTaskList({ actionErrors, busyJobIds, disabled = false
           />
         ))}
       </div>
-      {historyJobs.length > COLLAPSED_HISTORY_COUNT && (
+      {!visibleCurrentJobs.length && !visibleHistoryJobs.length && <p className="py-8 text-center text-sm text-stone-500 dark:text-stone-400">暂无{filters.find((item) => item.value === filter)?.label}任务。</p>}
+      {['all', 'history'].includes(filter) && historyJobs.length > COLLAPSED_HISTORY_COUNT && !isTargetInHistory && (
         <button
           aria-expanded={isHistoryExpanded}
           className="mt-2 flex min-h-11 w-full items-center justify-center gap-1.5 rounded-2xl text-xs font-medium text-stone-500 transition hover:bg-stone-100/70 hover:text-ink dark:text-stone-400 dark:hover:bg-white/[0.05] dark:hover:text-night-ink"
@@ -125,7 +144,7 @@ function TranslationTaskRow({ actionError, isBusy, isSuperseded, job, modelOptio
     review: BookOpen, ready: Check, rejected: CircleMinus, failed: AlertCircle,
   }[job.status];
   return (
-    <div aria-busy={isBusy} aria-label={`《${job.title}》翻译任务`} className="py-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent dark:focus-visible:outline-peach" data-task-focus-id={`translation:${job.id}`} key={job.id} role="group" tabIndex={-1}>
+    <div aria-busy={isBusy} aria-label={`《${job.title}》翻译任务`} className="scroll-mt-24 py-3 focus-visible:rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent dark:focus-visible:outline-peach" data-task-focus-id={`translation:${job.id}`} key={job.id} role="group" tabIndex={-1}>
       <div className="flex flex-wrap items-start gap-x-3 gap-y-1">
         <span className={cn(
           'mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full',
@@ -139,9 +158,9 @@ function TranslationTaskRow({ actionError, isBusy, isSuperseded, job, modelOptio
         )}>
           <Icon aria-hidden="true" className={cn('h-4 w-4', (isBusy || job.status === 'queued' || job.status === 'processing') && 'animate-spin')} />
         </span>
-        <div className="min-w-0 flex-[1_1_10rem]">
+        <div className="min-w-0 flex-[1_1_75%] sm:flex-[1_1_10rem]">
           <p className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-            <span className="min-w-0 max-w-full truncate text-sm font-medium text-stone-900 dark:text-night-ink" title={job.title}>{job.title}</span>
+            <span className="line-clamp-2 min-w-0 max-w-full break-words text-sm font-medium [overflow-wrap:anywhere] text-stone-900 dark:text-night-ink" title={job.title}>{job.title}</span>
             <span className="text-[11px] text-stone-500 dark:text-stone-400">{isSuperseded ? '历史失败记录' : getWholeBookTranslationStatusLabel(job)}</span>
           </p>
           <div className="mt-1 text-xs leading-5 text-stone-500 dark:text-stone-400">
@@ -155,7 +174,7 @@ function TranslationTaskRow({ actionError, isBusy, isSuperseded, job, modelOptio
               预计 {formatResumeTime(job.quota_resume_at)} 额度重置，后台将自动重试
             </span>
           )}
-          <span className="mt-1 block text-[11px] tabular-nums text-stone-400 [overflow-wrap:anywhere]">
+          <span className="mt-1 block text-[11px] tabular-nums text-stone-500 dark:text-stone-400 [overflow-wrap:anywhere]">
             {job.job_kind === 'source_update' ? '追加翻译' : '整本翻译'} · {job.completed_chapters}/{job.total_chapters} 话 · 总进度 {job.progress}%
             {job.channel_name ? ` · ${job.channel_name} · ` : ' · '}{job.model}
           </span>
@@ -164,7 +183,9 @@ function TranslationTaskRow({ actionError, isBusy, isSuperseded, job, modelOptio
               {getWholeBookTranslationQualityMessage(job)}
             </span>
           )}
-          <span className="mt-1 flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1">
+          {!isSuperseded && !['ready', 'review', 'rejected'].includes(job.status) && <details className="mt-1">
+            <summary className="inline-flex min-h-11 cursor-pointer items-center gap-1 text-xs text-stone-500 hover:text-accent lg:min-h-8 dark:text-stone-400">调整配置 <ChevronDown className="h-3 w-3" /></summary>
+            <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1">
             {!isSuperseded && !['ready', 'review', 'rejected'].includes(job.status) && (
               <label className="inline-flex min-w-0 max-w-full items-center gap-1 text-[11px] text-stone-400">
                 并发
@@ -206,7 +227,8 @@ function TranslationTaskRow({ actionError, isBusy, isSuperseded, job, modelOptio
                 </select>
               </label>
             )}
-          </span>
+            </div>
+          </details>}
         </div>
         <div aria-label={`《${job.title}》任务操作`} className="ml-auto flex max-w-full flex-wrap justify-end" role="group">
         {(job.status === 'queued' || job.status === 'processing' || job.status === 'waiting_quota') && !job.pause_requested && (

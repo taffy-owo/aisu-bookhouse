@@ -1,4 +1,4 @@
-/** Exercise real UploadPage diagnostics, task controls and retained submission settings. */
+/** Exercise real TranslationPage diagnostics, task controls and retained submission settings. */
 export async function verifyTaskMessages({ command, evaluate, wait, ensure, sleep, fresh, shot }) {
   const row = id => `Array.from(document.querySelectorAll('[role=group][aria-label]')).find(e=>e.getAttribute('aria-label')===${JSON.stringify('《' + id + '》翻译任务')})`;
   const failed = `Array.from(document.querySelectorAll('[role=group][aria-label]')).find(e=>e.getAttribute('aria-label').startsWith('《翻译失败的长书名'))`;
@@ -10,7 +10,7 @@ export async function verifyTaskMessages({ command, evaluate, wait, ensure, slee
     await sleep(100);
   };
   const activate = async (expression, touch) => {
-    const point = await evaluate(`(()=>{const e=${expression};e.scrollIntoView({block:'center'});const r=e.getBoundingClientRect();return{x:r.left+r.width/2,y:r.top+r.height/2}})()`);
+    const point = await evaluate(`(()=>{const e=${expression};for(let p=e.parentElement;p;p=p.parentElement)if(p.tagName==='DETAILS'&&!(e.tagName==='SUMMARY'&&p===e.parentElement))p.open=true;e.scrollIntoView({block:'center'});const r=e.getBoundingClientRect();return{x:r.left+r.width/2,y:r.top+r.height/2}})()`);
     if (touch) {
       await command('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [point] });
       await command('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });

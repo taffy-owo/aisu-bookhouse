@@ -6,7 +6,7 @@ export async function verifyTaskFocus({ command, evaluate, wait, ensure, sleep, 
     await sleep(100);
   };
   const activate = async expression => {
-    await evaluate(`(()=>{const e=${expression};e.scrollIntoView({block:'center'});e.focus({preventScroll:true})})()`);
+    await evaluate(`(()=>{const e=${expression};for(let p=e.parentElement;p;p=p.parentElement)if(p.tagName==='DETAILS'&&!(e.tagName==='SUMMARY'&&p===e.parentElement))p.open=true;e.scrollIntoView({block:'center'});e.focus({preventScroll:true})})()`);
     await key('Enter');
   };
   await fresh('taskMessages', 1536, 864, false);
@@ -19,7 +19,7 @@ export async function verifyTaskFocus({ command, evaluate, wait, ensure, sleep, 
   if (baseline) return;
   ensure(resumed.inside && resumed.title === '暂停并保留已完成进度', 'resuming a task keeps keyboard focus on its replacement control', resumed);
 
-  const panel = `document.querySelector('[role=region][aria-label=任务进度]')`;
+  const panel = `document.querySelector('[role=region][aria-label=翻译记录]')`;
   const focused = (owner, control) => `(${owner})?.contains(document.activeElement)&&document.activeElement.dataset.taskFocusControl===${JSON.stringify(control)}`;
   const release = async () => { await evaluate('draftFixture.holdTranslationActions=false;draftFixture.pendingTranslationActions.splice(0).forEach(p=>p.resolve())'); await sleep(150); };
   const submitRecord = `document.querySelector('[data-translation-submission]')`;
@@ -30,7 +30,9 @@ export async function verifyTaskFocus({ command, evaluate, wait, ensure, sleep, 
     await wait(`${row('paused')}!==null`);
   };
   const edit = async text => {
-    await evaluate(`(()=>{const e=document.querySelector('textarea[placeholder=直接粘贴文章或翻译好的正文]');e.scrollIntoView({block:'center'});e.focus({preventScroll:true})})()`);
+    await evaluate(`document.querySelector('details.translation-create').open=true;document.querySelector('[aria-controls=translation-preferences][aria-expanded=false]')?.click()`);
+    await wait('!!document.querySelector("#translation-preferences textarea")');
+    await evaluate(`(()=>{const e=document.querySelector('#translation-preferences textarea');e.scrollIntoView({block:'center'});e.focus({preventScroll:true})})()`);
     await command('Input.insertText', { text });
   };
   for (const viewport of [
@@ -99,9 +101,11 @@ export async function verifyTaskFocus({ command, evaluate, wait, ensure, sleep, 
     ensure(await evaluate(focused(row('ready'), 'open')), label + ' removing a local submission keeps focus on the remaining task');
     await activate(`${panel}.querySelector('[data-task-focus-control=clear]')`);
     await wait(`document.querySelectorAll('[data-task-focus-id]').length===0&&${panel}.getAttribute('aria-busy')==='false'`);
-    ensure(await evaluate(`document.activeElement===${panel}&&${panel}.querySelector('[data-task-focus-control=clear]').disabled&&draftFixture.clearRequests.length===2`), label + ' clearing the last records leaves focus on the empty task region');
+    ensure(await evaluate(`document.activeElement===${panel}&&${panel}.querySelector('[data-task-focus-control=clear]').disabled&&draftFixture.clearRequests.length===1&&draftFixture.clearRequests[0]==='translations'`), label + ' clearing the last records leaves focus on the empty task region');
 
     await setup(viewport);
+    await evaluate(`draftFixture.navigate('/upload')`);
+    await wait('!!document.querySelector("#upload-mode-file")');
     await evaluate(`document.querySelector('#upload-mode-file').click();draftFixture.uploadStatus=503`);
     await wait(`document.querySelector('[aria-label=选择图书文件]')!==null`);
     await evaluate(`(()=>{const e=document.querySelector('[aria-label=选择图书文件]'),d=new DataTransfer();d.items.add(new File(['正文'],'focus.txt',{type:'text/plain'}));e.files=d.files;e.dispatchEvent(new Event('change',{bubbles:true}))})()`);
@@ -130,5 +134,5 @@ export async function verifyTaskFocus({ command, evaluate, wait, ensure, sleep, 
   await wait('draftFixture.pendingTranslationActions.length===1');
   await evaluate(`draftFixture.navigate('/draft-away')`); await wait(`document.querySelector('#reopen')!==null`);
   await evaluate(`document.querySelector('#reopen').focus()`); await release();
-  ensure(await evaluate(`document.activeElement.id==='reopen'&&draftFixture.translationActions[0].aborted`), 'leaving the upload page cancels pending focus restoration');
+  ensure(await evaluate(`document.activeElement.id==='reopen'&&draftFixture.translationActions[0].aborted`), 'leaving the translation page cancels pending focus restoration');
 }

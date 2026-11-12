@@ -2,7 +2,7 @@ import { Bell, BookOpen, Check, CheckCheck, Clock, LoaderCircle, Pause, RefreshC
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useLocation } from 'react-router-dom';
-import { getBookDetailPath } from '../../../config/routes';
+import { getBookDetailPath, getTranslationTaskPath, ROUTES } from '../../../config/routes';
 import { createCollectionLinkState } from '../../../shared/navigation/navigationState';
 import { formatDate } from '../../../shared/utils/formatDate';
 import { cn } from '../../../shared/utils/cn';
@@ -469,15 +469,11 @@ export function SourceUpdateNotifications({ sessionId }: { sessionId?: string })
                   : job.status === 'ready'
                     ? <Check className="h-5 w-5 shrink-0 text-emerald-500" />
                     : <X className="h-5 w-5 shrink-0 text-red-500" />}
-                {job.book_id ? (
-                  <Link className={cn('min-w-0', !hasTrailingAction && 'col-span-2')} onClick={() => setIsOpen(false)} state={navigationState} to={`${getBookDetailPath(job.book_id)}${job.status === 'review' ? `?translationReview=${encodeURIComponent(job.id)}` : ''}`}>
-                    {content}
-                  </Link>
-                ) : (
-                  <span className={cn('min-w-0', !hasTrailingAction && 'col-span-2')}>
-                    {content}
-                  </span>
-                )}
+                <Link className={cn('min-w-0', !hasTrailingAction && 'col-span-2')} onClick={() => setIsOpen(false)} state={navigationState} to={job.book_id && (job.status === 'ready' || job.status === 'review')
+                  ? `${getBookDetailPath(job.book_id)}${job.status === 'review' ? `?translationReview=${encodeURIComponent(job.id)}` : ''}`
+                  : getTranslationTaskPath(job.id)}>
+                  {content}
+                </Link>
                 {isRetryable ? (
                   <div className="col-span-2 col-start-2 flex flex-wrap items-center justify-end gap-1">
                     <button aria-busy={isProcessing && translationAction === 'retry'} className="inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-xs font-medium text-accent disabled:opacity-50" disabled={processingTranslationId !== null} onClick={() => void handleTranslationAction(job.id, 'retry')} type="button">{isProcessing && translationAction === 'retry' ? <><LoaderCircle aria-hidden className="h-4 w-4 animate-spin" />重试中…</> : job.status === 'waiting_quota' ? '立即重试' : '重试'}</button>
@@ -508,15 +504,15 @@ export function SourceUpdateNotifications({ sessionId }: { sessionId?: string })
                   </span>
                 </Link>
                 <button
-                  aria-label={`将《${book.title}》的更新标记为已读`}
+                  aria-label={`关闭《${book.title}》的此次更新提醒`}
                   className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-stone-500 transition hover:bg-emerald-50 hover:text-emerald-700 disabled:opacity-50 dark:text-stone-400 dark:hover:bg-emerald-950/30 dark:hover:text-emerald-300"
                   disabled={processingBookId !== null || isAcknowledgingAll}
                   onClick={() => void handleAcknowledge(book.id)}
-                  title="标记已读"
+                  title="关闭此次更新提醒"
                   type="button"
                 >
                   {processingBookId === book.id ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-                  <span>{processingBookId === book.id ? '处理中' : '标为已读'}</span>
+                  <span>{processingBookId === book.id ? '处理中' : '关闭提醒'}</span>
                 </button>
               </div>
             ))}
@@ -529,6 +525,7 @@ export function SourceUpdateNotifications({ sessionId }: { sessionId?: string })
               </div>
             )}
           </div>
+          <Link className="flex min-h-11 shrink-0 items-center justify-center border-t border-stone-200/70 px-4 text-sm font-medium text-accent dark:border-white/10 dark:text-peach" onClick={() => setIsOpen(false)} to={ROUTES.translations}>全部翻译任务</Link>
           {data.items.length > 1 && (
             <div className="border-t border-stone-200/70 px-4 py-2.5 dark:border-white/10">
               <button
@@ -538,7 +535,7 @@ export function SourceUpdateNotifications({ sessionId }: { sessionId?: string })
                 type="button"
               >
                 {isAcknowledgingAll ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <CheckCheck className="h-4 w-4" />}
-                {isAcknowledgingAll ? '正在处理' : '全部标为已读'}
+                {isAcknowledgingAll ? '正在处理' : '关闭全部更新提醒'}
               </button>
             </div>
           )}

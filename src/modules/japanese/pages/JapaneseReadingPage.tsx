@@ -1,5 +1,5 @@
 import { hasBookReadingHistory } from '../../books/services/bookProgress';
-import { ArrowRight, Check, Languages, Upload } from 'lucide-react';
+import { ArrowRight, Upload } from 'lucide-react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { useSession } from '../../../app/SessionContext';
@@ -188,12 +188,8 @@ export function JapaneseReadingPage() {
     <Panel className="japanese-page" data-navigation-pages={page} data-navigation-has-more={hasMore} data-navigation-loading={isLoading || isRefreshing || isLoadingMore}>
       <header className={cn('japanese-page-header flex flex-col gap-4 border-b pb-5 sm:flex-row sm:items-end sm:justify-between', HAIRLINE)}>
         <div className="min-w-0">
-          <div className="flex items-center gap-2 text-xs font-medium text-accent dark:text-peach lg:hidden">
-            <Languages className="h-4 w-4" />
-            日文阅读
-          </div>
           <h1 className="app-page-title mt-2 lg:mt-0 font-display text-3xl font-semibold text-stone-950 dark:text-night-ink">日文阅读</h1>
-          <p className="mt-1 text-sm leading-6 text-stone-500 dark:text-stone-400">粘贴原文，立即在当前页面阅读。</p>
+          <p className="mt-1 text-sm leading-6 text-stone-500 dark:text-stone-400">粘贴日文，查词、注音与双语对照。</p>
         </div>
         <Link className="japanese-page-action inline-flex min-h-10 shrink-0 items-center justify-center gap-2 self-start rounded-lg border border-ink/[0.08] bg-white/45 px-3 py-2 text-sm font-medium text-stone-600 transition hover:bg-white/75 dark:border-white/10 dark:bg-white/[0.04] dark:text-night-soft dark:hover:bg-white/[0.07] sm:self-auto" to={ROUTES.upload}>
           <Upload className="h-4 w-4" />上传日文书
@@ -208,8 +204,7 @@ export function JapaneseReadingPage() {
       <section className="japanese-shelf mt-9 sm:mt-11 lg:mt-5">
         <div className="japanese-shelf-heading flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-xs font-medium text-stone-400">我的日文书</p>
-            <h2 className="mt-1 font-display text-2xl font-semibold text-stone-950 sm:text-3xl lg:text-xl dark:text-night-ink">书架</h2>
+            <h2 className=" font-display text-2xl font-semibold text-stone-950 sm:text-3xl lg:text-xl dark:text-night-ink">日文书架</h2>
           </div>
           {query && <p title={query} className="line-clamp-2 min-w-0 break-words text-sm text-stone-500 dark:text-stone-400">搜索“{query}”</p>}
         </div>
@@ -226,7 +221,7 @@ export function JapaneseReadingPage() {
               {item.label}
             </button>
           ))}
-          <span className="japanese-shelf-count ml-auto flex shrink-0 items-center gap-1 px-2 text-xs tabular-nums text-stone-400">{isLoading ? '加载中…' : <><Check className="h-3.5 w-3.5" />{total} 本</>}</span>
+          <span className="japanese-shelf-count ml-auto flex shrink-0 items-center gap-1 px-2 text-xs tabular-nums text-stone-400">{isLoading ? '加载中…' : <>{total} 本</>}</span>
         </div>
 
         {loadError ? (
@@ -234,10 +229,9 @@ export function JapaneseReadingPage() {
         ) : isLoading ? (
           <div className="mt-6 lg:mt-4"><BookShelfSkeleton count={7} /></div>
         ) : !books.length && filter === 'all' && !query ? (
-          <section className={cn('japanese-empty-shelf mt-9 flex items-center justify-between gap-4 border-t pt-6', HAIRLINE)}>
+          <section className={cn('japanese-empty-shelf mt-4 flex flex-wrap items-center justify-between gap-4 border-t pt-6', HAIRLINE)}>
             <div>
-              <h2 className="font-display text-xl font-semibold text-stone-950 dark:text-night-ink">我的日文书</h2>
-              <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">保存过的文章会出现在这里。</p>
+              <p className="text-sm text-stone-500 dark:text-stone-400">还没有日文书，可以上传文件或将上方的文章保存到书架。</p>
             </div>
             <Link className="japanese-page-action inline-flex min-h-10 shrink-0 items-center gap-2 rounded-lg px-3 text-sm text-accent transition hover:bg-accent/[0.07] dark:text-peach" to={ROUTES.library}>
               打开我的书架 <ArrowRight className="h-4 w-4" />

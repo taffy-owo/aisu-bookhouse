@@ -8,8 +8,13 @@ export const ROUTES = {
   profile: '/me',
   publicLibrary: '/public',
   settings: '/settings',
+  translations: '/translations',
   upload: '/upload',
 } as const;
+
+export function getTranslationTaskPath(taskId: string): string {
+  return `${ROUTES.translations}?task=${encodeURIComponent(taskId)}`;
+}
 
 export function getBookDetailPath(bookId: string): string {
   return `/books/${bookId}`;

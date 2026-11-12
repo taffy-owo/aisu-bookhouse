@@ -4,6 +4,8 @@ import { Link, MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom
 import { SessionContext } from '../../../src/app/SessionContext';
 import { AppLayout } from '../../../src/app/AppLayout';
 import { ThemeProvider } from '../../../src/shared/theme/ThemeProvider';
+import { JapaneseReadingPage } from '../../../src/modules/japanese/pages/JapaneseReadingPage';
+import { TranslationPage } from '../../../src/modules/uploads/pages/TranslationPage';
 import { UploadPage } from '../../../src/modules/uploads/pages/UploadPage';
 import { getAccountScope, setStoredSession } from '../../../src/shared/api';
 import '../../../src/index.css';
@@ -20,6 +22,7 @@ if (query.has('seed') && !sessionStorage.getItem('upload-draft-fixture-seeded'))
   sessionStorage.setItem('upload-draft-fixture-seeded', 'true');
 }
 const fixture = {
+  apiReads: [],
   failGet: query.has('failGet'), failSet: query.has('failSet'), failRemove: query.has('failRemove'),
   sets: [], removes: [], reads: [], uploads: [], tasks: new Map(), holdUpload: false, uploadStatus: 200, pendingUploads: [],
   taskReads: [], pendingTaskReads: [], holdTaskReads: query.has('holdTaskReads'), holdTasksAfterAccept: query.has('holdTasksAfterAccept'), failTasksAfterAccept: query.has('failTasksAfterAccept'), taskStatus: 0,
@@ -61,6 +64,8 @@ const nativeFetch = window.fetch.bind(window);
 window.fetch = async (input, options) => {
   const path = new URL(String(input), location.origin).pathname;
   if (!path.startsWith('/api/v1/')) return nativeFetch(input, options);
+  fixture.apiReads.push({ path, method: options?.method || 'GET' });
+  if (path === '/api/v1/books') return Response.json({ items: [], total: 0, page: 1, page_size: 36, has_more: false });
   if (path.endsWith('/uploads/tasks/completed')) {
     fixture.clearRequests.push('uploads');
     const scope = getAccountScope();
@@ -87,7 +92,7 @@ window.fetch = async (input, options) => {
     task.status = 'ready'; task.progress = 100;
     return Response.json({ task_id: task.id, book_id: bookId, status: 'ready' });
   }
-  if (path.endsWith('/translations/notifications')) return Response.json({ active_count: 0, unread_count: 0, items: [] });
+  if (path.endsWith('/translations/notifications')) return Response.json({ active_count: 0, unread_count: 0, items: fixture.notificationJobs || [] });
   if (path.endsWith('/books/source-updates')) return Response.json({ book_count: 0, episode_count: 0, items: [] });
   if (path.endsWith('/auth/me/ai-settings')) return Response.json({ api_key_configured: false, provider_base_url: '', translation_model: '', translation_prompt: '', translation_concurrency: 2, audiobook_api_key_configured: false, audiobook_provider_base_url: '', audiobook_tts_model: '', audiobook_tts_voice: '' });
   if (path.endsWith('/ai-channels/translation-models')) return Response.json([]);
@@ -150,5 +155,5 @@ function FixtureSession({ children }) {
   return <SessionContext.Provider value={{ session: current, isLoading: false, logout: noop, login: async () => current, registerWithInvitation: async () => current, updateNickname: noop, updateAvatar: noop, changePassword: noop }}>{children}</SessionContext.Provider>;
 }
 function Probe() { const navigate = useNavigate(); fixture.navigate = navigate; return null; }
-const tree = <FixtureSession><MemoryRouter initialEntries={['/upload']}><Probe /><ThemeProvider><Routes><Route element={<AppLayout />}><Route path="/upload" element={<UploadPage />} /><Route path="/draft-away" element={<main><Link id="reopen" to="/upload">返回上传页</Link></main>} /></Route></Routes></ThemeProvider></MemoryRouter></FixtureSession>;
+const tree = <FixtureSession><MemoryRouter initialEntries={[query.has('japanese') ? '/japanese' : query.has('taskMessages') || query.has('taskFocus') || query.has('translation') ? '/translations' : '/upload']}><Probe /><ThemeProvider><Routes><Route element={<AppLayout />}><Route path="/upload" element={<UploadPage />} /><Route path="/translations" element={<TranslationPage />} /><Route path="/japanese" element={<JapaneseReadingPage />} /><Route path="/draft-away" element={<main><Link id="reopen" to="/upload">返回上传页</Link></main>} /></Route></Routes></ThemeProvider></MemoryRouter></FixtureSession>;
 createRoot(document.getElementById('root')).render(query.has('strict') ? <React.StrictMode>{tree}</React.StrictMode> : tree);

@@ -21,7 +21,7 @@ export function useTaskFocus(accountScope: string) {
     intentRef.current = {
       accountScope,
       rowId: row?.dataset.taskFocusId,
-      index: row ? [...event.currentTarget.querySelectorAll(ROWS)].indexOf(row) : -1,
+      index: row ? [...event.currentTarget.querySelectorAll<HTMLElement>(ROWS)].filter(element => element.getClientRects().length > 0).indexOf(row) : -1,
       control: controlKey(control),
     };
     fallbackRef.current = null;
@@ -35,7 +35,7 @@ export function useTaskFocus(accountScope: string) {
       return;
     }
     if (!root || !ownsFocus(root)) return;
-    const rows = [...root.querySelectorAll<HTMLElement>(ROWS)];
+    const rows = [...root.querySelectorAll<HTMLElement>(ROWS)].filter(element => element.getClientRects().length > 0);
     const row = rows.find(element => element.dataset.taskFocusId === intent.rowId)
       ?? (intent.rowId ? rows[Math.min(intent.index, rows.length - 1)] : undefined);
     const owner = intent.rowId ? row ?? root : root;

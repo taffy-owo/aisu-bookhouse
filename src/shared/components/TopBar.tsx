@@ -146,7 +146,7 @@ export function TopBar({ onSearchChange, searchValue = '' }: TopBarProps) {
   };
 
   return (
-    <header className="topbar-shell sticky top-3 z-30 w-full min-w-0 items-center gap-2 px-0 py-1.5 sm:top-4 sm:gap-3 sm:py-3">
+    <header className="topbar-shell relative z-30 w-full min-w-0 items-center gap-2 px-0 py-1.5 sm:gap-3 sm:py-3">
       <form aria-label="全站搜索" className="topbar-search-form relative min-w-0 flex-1" onSubmit={handleSearchSubmit}>
         <label>
           <Search className="topbar-search-icon pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400 sm:left-4" />

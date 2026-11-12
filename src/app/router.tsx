@@ -26,6 +26,7 @@ const ProfilePage = lazy(() => import('../modules/profile/pages/ProfilePage').th
 const PublicLibraryPage = lazy(() => import('../modules/library/pages/PublicLibraryPage').then((module) => ({ default: module.PublicLibraryPage })));
 const SettingsPage = lazy(() => import('../modules/settings/pages/SettingsPage').then((module) => ({ default: module.SettingsPage })));
 const UploadPage = lazy(() => import('../modules/uploads/pages/UploadPage').then((module) => ({ default: module.UploadPage })));
+const TranslationPage = lazy(() => import('../modules/uploads/pages/TranslationPage').then((module) => ({ default: module.TranslationPage })));
 
 function LoginRoute() {
   const { isLoading, login, registerWithInvitation, session } = useSession();
@@ -142,6 +143,7 @@ export function AppRoutes() {
         <Route element={<PageRoute><BookDetailPage /></PageRoute>} path="/books/:bookId" />
         <Route element={<PageRoute><ProfilePage /></PageRoute>} path={ROUTES.profile} />
         <Route element={<PageRoute><UploadPage /></PageRoute>} path={ROUTES.upload} />
+        <Route element={<PageRoute><TranslationPage /></PageRoute>} path={ROUTES.translations} />
         <Route element={<PageRoute><ApiDocsPage /></PageRoute>} path={ROUTES.apiDocs} />
         <Route element={<PageRoute><SettingsPage /></PageRoute>} path={ROUTES.settings} />
         <Route element={<AdminRoute><PageRoute><AdminStatusPage /></PageRoute></AdminRoute>} path={ROUTES.adminUsers} />

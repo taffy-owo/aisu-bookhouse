@@ -202,32 +202,33 @@ export function InlineJapaneseReadingWorkspace({ onImported }: InlineJapaneseRea
 
   return (
     <section className="japanese-workspace mt-6 lg:mt-4">
-      <div className="japanese-workspace-heading flex items-center gap-2 text-sm font-semibold text-stone-800 dark:text-night-ink">
+      <label htmlFor="japanese-source-text" className="japanese-workspace-heading flex items-center gap-2 text-sm font-semibold text-stone-800 dark:text-night-ink">
         <BookOpenText className="h-4 w-4 text-accent dark:text-peach" />
-        粘贴日文正文
-      </div>
+        粘贴原文
+      </label>
 
-      <p className="japanese-workspace-note mt-2 text-xs text-stone-500 dark:text-stone-400" role={draftStorageFailed ? 'status' : undefined}>
-        {draftStorageFailed ? '草稿暂时无法保存在浏览器，请在离开前复制正文。' : initialDraft ? '已恢复本标签页的草稿。' : '草稿保留在本标签页，返回或刷新后可继续。'}
-      </p>
+      {(draftStorageFailed || initialDraft) && <p className="japanese-workspace-note mt-2 text-xs text-stone-500 dark:text-stone-400" role="status">
+        {draftStorageFailed ? '草稿暂时无法保存在浏览器，请在离开前复制正文。' : '已恢复本标签页的草稿。'}
+      </p>}
       <textarea
+        id="japanese-source-text"
         aria-label="日文正文"
-        className="japanese-source-input mt-4 min-h-[180px] w-full resize-y px-4 py-3 font-serif text-[16px] leading-8 outline-none transition placeholder:text-stone-500 focus:border-accent focus:ring-2 focus:ring-accent/15 dark:placeholder:text-stone-600"
+        className="japanese-source-input mt-3 min-h-[180px] w-full resize-y px-4 py-3 font-serif text-[16px] leading-8 outline-none transition placeholder:text-stone-500 focus:border-accent focus:ring-2 focus:ring-accent/15 dark:placeholder:text-stone-600"
         onChange={(event) => setContent(event.target.value)}
         placeholder="把日文文章粘贴到这里…"
         value={content}
       />
 
       <div className="japanese-workspace-actions mt-2 flex items-center justify-between gap-3">
-        <span className="japanese-character-count text-xs tabular-nums text-stone-400">{content.length.toLocaleString()} 字符</span>
-        <Button className="japanese-start-button" icon={<BookOpenText className="h-4 w-4" />} onClick={handleStartReading}>
+        <span className="japanese-character-count text-xs tabular-nums text-stone-400">{content.length.toLocaleString()} 字符<span className="ml-3 hidden sm:inline">草稿自动保存在本标签页</span></span>
+        <Button disabled={!content.trim()} className="japanese-start-button" icon={<BookOpenText className="h-4 w-4" />} onClick={handleStartReading}>
           开始阅读
         </Button>
       </div>
 
       <details className="japanese-details group mt-3 border-t border-ink/[0.07] pt-2 dark:border-white/10">
         <summary className="flex min-h-10 cursor-pointer list-none items-center justify-between gap-3 text-sm text-stone-500 dark:text-stone-400">
-          标题、作者和原文链接（可选）
+          补充标题、作者或来源
           <ChevronDown className="h-4 w-4 shrink-0 transition-transform group-open:rotate-180" />
         </summary>
         <div className="grid gap-4 pb-1 pt-3 sm:grid-cols-2">
