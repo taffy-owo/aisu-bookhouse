@@ -3,7 +3,7 @@ from app.core.storage import get_storage_root, resolve_storage_path
 from app.modules.book_assets.repository import BookAssetRepository
 from app.modules.book_assets.image_metadata import read_image_file_dimensions
 from app.modules.books.domain import Book
-from app.modules.books.repository import BookRepository
+from app.modules.books.repository import BookRepository, SqlAlchemyBookRepository
 from app.modules.processing.processors.comic_processor import process_comic_archive
 from app.modules.processing.processors.epub_processor import process_epub
 from app.modules.processing.processors.image_processor import process_image
@@ -22,10 +22,33 @@ def process_uploaded_book(
     should_update_description: bool = True,
     settings: Settings,
 ) -> Book:
+    from app.modules.books.chapter_append import get_asset_title, read_asset_content_hash
+    from app.modules.books.source_identity import source_url_identity
+    from app.modules.reader.service import filter_readable_text_assets
+    from app.modules.reading_progress.chapter_calculation import appended_progress_percent, rebase_appended_progress
+    from app.modules.reading_progress.repository import SqlAlchemyReadingProgressRepository
+
+    previous = filter_readable_text_assets(asset_repository.list_by_book(book.id, "text_chapter"))
+    # The parser may reuse chapter paths. Capture the old contents before it writes.
+    previous_hashes = [read_asset_content_hash(asset.path, settings, get_asset_title(asset, index))
+                       for index, asset in enumerate(previous, 1)]
     result = run_processor(book, settings)
     validate_processing_result_files(result, settings)
     if result.reader_type != "unsupported":
         validate_media_result(book, result, settings)
+    current = filter_readable_text_assets([asset for asset in result.assets if asset.asset_type == "text_chapter"])
+    if book.reader_type == (result.reader_type or book.reader_type) and previous and len(current) > len(previous):
+        same_prefix = all(
+            (source_url_identity(old.metadata.get("source_episode_url")) is not None
+             and source_url_identity(old.metadata.get("source_episode_url")) == source_url_identity(new.metadata.get("source_episode_url")))
+            or (old_hash is not None and old_hash == read_asset_content_hash(new.path, settings, get_asset_title(new, index)))
+            for index, (old, new, old_hash) in enumerate(zip(previous, current, previous_hashes), 1)
+        )
+        if same_prefix:
+            book = book.with_changes(progress_percent=appended_progress_percent(book.progress_percent, previous, current))
+            if isinstance(book_repository, SqlAlchemyBookRepository):
+                rebase_appended_progress(book.id, previous, current,
+                    SqlAlchemyReadingProgressRepository(book_repository._session, autocommit=False))
     custom_cover = next(
         (
             asset

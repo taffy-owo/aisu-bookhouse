@@ -6,6 +6,7 @@ from sqlalchemy import delete, select, update
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.dialects.postgresql import insert as postgres_insert
 from sqlalchemy.orm import Session
+from app.core.database_revisions import datetime_revision_matches
 
 from app.modules.reading_progress.domain import ReadingProgress
 from app.modules.reading_progress.models import ReadingProgressRecord
@@ -180,7 +181,9 @@ class SqlAlchemyReadingProgressRepository:
                       ReadingProgressRecord.book_id == previous.book_id]
         for name in columns:
             value = getattr(previous, name)
-            conditions.append(getattr(ReadingProgressRecord, name) == value)
+            column = getattr(ReadingProgressRecord, name)
+            conditions.append(datetime_revision_matches(column, value, self._session.get_bind().dialect.name)
+                              if name == "updated_at" else column == value)
         self._session.execute(update(ReadingProgressRecord).where(*conditions).values(
             progress_percent=current.progress_percent, chapter_index=current.chapter_index,
             epub_cfi=current.epub_cfi, chapter_href=current.chapter_href,

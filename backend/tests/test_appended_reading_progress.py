@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from math import floor
+from pathlib import Path
 from uuid import uuid4
 
 import pytest
@@ -232,7 +233,8 @@ def test_only_actual_end_of_current_catalog_is_finished(client, auth_headers, in
 
 
 @pytest.mark.parametrize('unchanged_prefix', [True, False])
-def test_reprocessing_an_externally_appended_epub_rebases_only_a_verified_prefix(client, auth_headers, unchanged_prefix):
+@pytest.mark.parametrize('entrypoint', ['api', 'direct', 'direct_legacy_timestamp'])
+def test_reprocessing_an_externally_appended_epub_rebases_only_a_verified_prefix(client, auth_headers, unchanged_prefix, entrypoint):
     from pathlib import Path
     uploaded = client.post('/api/v1/uploads/books', headers=auth_headers,
         files={'file': ('external.epub', make_minimal_epub_bytes(chapter_texts=['甲' * 100, '乙' * 100]), 'application/epub+zip')})
@@ -247,11 +249,62 @@ def test_reprocessing_an_externally_appended_epub_rebases_only_a_verified_prefix
         prefix = original.read_bytes() if unchanged_prefix else make_minimal_epub_bytes(chapter_texts=['改' * 100, '乙' * 100])
         original.write_bytes(append_translation_epub(original_epub=prefix,
             chapters=[{'index': 3, 'title': '第三话', 'paragraphs': ['新' * 500]}]))
-    response = client.post(f'/api/v1/uploads/books/{bid}/reprocess', headers=auth_headers)
-    assert response.status_code == 200, response.text
+    if entrypoint == 'api':
+        response = client.post(f'/api/v1/uploads/books/{bid}/reprocess', headers=auth_headers)
+        assert response.status_code == 200, response.text
+    else:
+        from app.modules.books.repository import SqlAlchemyBookRepository
+        from app.modules.processing.service import process_uploaded_book
+        with client.app.state.db_session_factory() as session:
+            if entrypoint == 'direct_legacy_timestamp':
+                saved = SqlAlchemyReadingProgressRepository(session).get(Settings.default_user_id, bid)
+                session.connection().exec_driver_sql(
+                    'UPDATE reading_progress SET updated_at = ? WHERE book_id = ?',
+                    (saved.updated_at.isoformat(), bid),
+                )
+                session.commit()
+            books = SqlAlchemyBookRepository(session)
+            process_uploaded_book(book=books.get_owned(Settings.default_user_id, bid),
+                book_repository=books, asset_repository=SqlAlchemyBookAssetRepository(session),
+                should_update_author=False, should_update_title=False, settings=client.app.state.settings)
     resource = client.get(f'/api/v1/books/{bid}/reader', headers=auth_headers).json()
     weights = [item['progress_weight'] for item in resource['toc']]
     progress = client.get(f'/api/v1/books/{bid}/progress', headers=auth_headers).json()
     expected = floor(sum(weights[:2]) / sum(weights) * 100 + .5) if unchanged_prefix else 100
     assert progress['progress_percent'] == expected
     assert progress['chapter_index'] == 2 and progress['epub_cfi'] == 'aisu-scroll:1'
+    detail = client.get(f'/api/v1/books/{bid}', headers=auth_headers).json()
+    assert detail['progress_percent'] == expected
+    finished = client.get('/api/v1/books', headers=auth_headers, params={'shelf': 'finished'}).json()['items']
+    assert any(item['id'] == bid for item in finished) is (not unchanged_prefix)
+
+
+def test_direct_processing_preserves_source_position_when_translation_is_revised_and_extended(client, auth_headers):
+    from app.modules.books.repository import SqlAlchemyBookRepository
+    from app.modules.processing.service import process_uploaded_book
+    from app.modules.translations.epub import build_translation_epub
+
+    source = 'https://kakuyomu.jp/works/123/episodes/1'
+    first = {'index': 1, 'title': '第一话', 'source_url': source, 'paragraphs': ['旧' * 100]}
+    data = build_translation_epub(title='续译', author='作者', description='', source_url='https://kakuyomu.jp/works/123', chapters=[first])
+    uploaded = client.post('/api/v1/uploads/books', headers=auth_headers,
+        files={'file': ('source.epub', data, 'application/epub+zip')})
+    assert uploaded.status_code == 200, uploaded.text
+    bid = uploaded.json()['book_id']
+    read_at = datetime.now(timezone.utc) - timedelta(hours=1)
+    with client.app.state.db_session_factory() as session:
+        SqlAlchemyReadingProgressRepository(session).save(ReadingProgress(user_id=Settings.default_user_id,
+            book_id=bid, reader_type='epub', chapter_index=1, epub_cfi='aisu-scroll:1',
+            progress_percent=100, updated_at=read_at))
+        books = SqlAlchemyBookRepository(session)
+        book = books.get_owned(Settings.default_user_id, bid)
+        Path(client.app.state.settings.storage_root, book.original_file_path).write_bytes(build_translation_epub(
+            title='续译', author='作者', description='', source_url='https://kakuyomu.jp/works/123',
+            chapters=[{**first, 'paragraphs': ['修' * 200]},
+                      {'index': 2, 'title': '第二话', 'source_url': 'https://kakuyomu.jp/works/123/episodes/2', 'paragraphs': ['新' * 300]}]))
+        process_uploaded_book(book=book, book_repository=books, asset_repository=SqlAlchemyBookAssetRepository(session),
+            should_update_author=False, should_update_title=False, settings=client.app.state.settings)
+    current = client.get(f'/api/v1/books/{bid}/progress', headers=auth_headers).json()
+    assert 0 < current['progress_percent'] < 100
+    assert current['chapter_index'] == 1 and current['epub_cfi'] == 'aisu-scroll:1'
+    assert datetime.fromisoformat(current['updated_at'].replace('Z', '+00:00')) == read_at
