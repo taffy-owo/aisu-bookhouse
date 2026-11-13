@@ -525,7 +525,9 @@ def apply_source_metadata(
         )
     else:
         pending_indexes.clear()
-    if source_scope and pending_indexes and previous_episode_count is not None:
+    # The catalog count is a source snapshot, not proof that its chapters were
+    # imported. A known local endpoint can reveal an old gap even with no alert.
+    if source_scope:
         pending_indexes.update(source_scope.pending_indexes)
     pending_indexes.intersection_update(available_indexes)
     pending_indexes.difference_update(covered_episode_indexes or set())

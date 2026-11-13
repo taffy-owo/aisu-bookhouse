@@ -13,6 +13,7 @@ from app.modules.books.source_updates import (
     apply_source_metadata,
     is_source_check_due,
     process_next_due_source_update,
+    resolve_source_coverage,
     source_check_day_start,
     source_check_window_start,
 )
@@ -96,6 +97,49 @@ def test_source_scope_backfills_missing_episodes_inside_an_existing_catalog_coun
 
     assert updated.source_pending_episode_indexes == (6, 7, 8)
     assert updated.source_update_count == 3
+
+
+@pytest.mark.parametrize("previous_count", [None, 32])
+def test_source_check_finds_missing_finale_without_an_existing_update_alert(previous_count: int | None) -> None:
+    book = create_uploaded_book(
+        author="作者", book_id="book-finale", file_label="book.epub", kind="novel",
+        owner_id="owner-1", reader_type="epub", tags=(), title="作品",
+    ).with_changes(
+        publication_status="completed", source_url=SOURCE_URL, source_episode_count=previous_count,
+        source_pending_episode_indexes=(), source_update_count=0,
+    )
+    chapters = [
+        create_book_asset(
+            asset_type="text_chapter", book_id=book.id, index=index,
+            metadata={"title": f"第{index}话 既有译文"}, path=f"chapter-{index}.txt",
+        )
+        for index in range(1, 32)
+    ]
+    source = metadata(episode_count=32, publication_status="completed")
+    source.episodes[-1].title = "最終話 幸せな話"
+    covered, scope = resolve_source_coverage(book, chapters, source)
+
+    updated = apply_source_metadata(
+        book, source, checked_at=datetime(2026, 11, 13, tzinfo=timezone.utc),
+        covered_episode_indexes=covered, source_scope=scope,
+    )
+
+    assert updated.source_pending_episode_indexes == (32,)
+    assert updated.source_update_count == 1
+    assert updated.source_episode_count == 32
+    assert updated.updated_at == book.updated_at
+
+    chapters.append(create_book_asset(
+        asset_type="text_chapter", book_id=book.id, index=32, path="finale.txt",
+        metadata={"title": "最终话 幸福的故事", "source_episode_url": source.episodes[-1].url},
+    ))
+    covered, scope = resolve_source_coverage(updated, chapters, source)
+    completed = apply_source_metadata(
+        updated, source, checked_at=datetime(2026, 11, 13, tzinfo=timezone.utc),
+        covered_episode_indexes=covered, source_scope=scope,
+    )
+    assert completed.source_pending_episode_indexes == ()
+    assert completed.source_update_count == 0
 
 
 def test_finished_source_part_discards_updates_from_later_numbering_runs() -> None:
@@ -437,17 +481,19 @@ async def test_manual_source_update_translation_requires_a_configured_provider(
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("known_episode_count", [2, 3])
 async def test_manual_source_update_translation_bootstraps_uploaded_epub_without_retranslating_existing_chapters(
     client: TestClient,
     auth_headers: dict[str, str],
     monkeypatch: MonkeyPatch,
+    known_episode_count: int,
 ) -> None:
     configured = client.patch(
         "/api/v1/books/b1",
         headers=auth_headers,
         json={
             "publication_status": "ongoing",
-            "source_episode_count": 2,
+            "source_episode_count": known_episode_count,
             "source_url": SOURCE_URL,
         },
     )
