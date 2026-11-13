@@ -3169,11 +3169,6 @@ html.dark .app-content textarea::placeholder { color: rgb(var(--night-soft) / .8
   .profile-continue .book-cover-author { display: none; }
   .profile-continue h3 { font-size: 18px; }
   .profile-continue .mt-5 { margin-top: 12px; }
-  .japanese-page > header { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; padding-bottom: 12px; }
-  .japanese-page > header > div > div { display: none; }
-  .japanese-page > header h1 { margin-top: 0; font-size: 26px; }
-  .japanese-page > header p { font-size: 12px; }
-  .japanese-page > header > a { align-self: center; font-size: 12px; padding-left: 8px; padding-right: 8px; }
   .japanese-start-row > section:first-child { margin-top: 16px; padding: 12px; }
   .japanese-start-row textarea[aria-label="日文正文"] { min-height: 140px; margin-top: 10px; }
   .japanese-continue { margin-top: 16px; padding: 12px; border-radius: 16px; }
@@ -3183,7 +3178,6 @@ html.dark .app-content textarea::placeholder { color: rgb(var(--night-soft) / .8
 
 @media (min-width: 768px) and (max-width: 1023px) {
   .app-content .app-page-title { font-size: 26px; line-height: 1.4; }
-  .japanese-page > header > div > div { display: none; }
   .japanese-page .japanese-start-row { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 16px; }
   .japanese-page .japanese-start-row:has(.japanese-inline-reader),
   .japanese-page .japanese-start-row:not(:has(.japanese-continue)) { grid-template-columns: minmax(0, 1fr); }
@@ -3203,8 +3197,8 @@ html.dark .app-content textarea::placeholder { color: rgb(var(--night-soft) / .8
 html.dark .topbar-shell { border-color: transparent; }
 
 /* Reading-page composition, keeping the existing sakura identity. */
-.home-compact-page { --reading-ink: #473541; --reading-muted: #6f6068; --reading-accent: #a84b58; }
-html.dark .home-compact-page { --reading-ink: rgb(var(--night-ink)); --reading-muted: rgb(var(--night-soft)); --reading-accent: #dda69f; }
+.home-compact-page, .japanese-page { --reading-ink: #473541; --reading-muted: #6f6068; --reading-accent: #a84b58; }
+html.dark :is(.home-compact-page, .japanese-page) { --reading-ink: rgb(var(--night-ink)); --reading-muted: rgb(var(--night-soft)); --reading-accent: #dda69f; }
 .reading-feature {
   display: grid; grid-template-columns: minmax(0, 1fr) 108px; align-items: center; gap: 22px;
   padding: 16px 20px; border-radius: 20px; background: rgb(255 250 248 / .64); color: var(--reading-ink);
@@ -3494,36 +3488,14 @@ html.dark .home-compact-page .reading-feature::before {
    editor is one working surface; the shelf and its filters read as a page
    section instead of a stack of cards. */
 .japanese-page {
-  --japanese-ink: #493a43;
-  --japanese-muted: #6f6068;
-  --japanese-rule: rgb(77 52 65 / .14);
+  --japanese-ink: var(--reading-ink);
+  --japanese-muted: var(--reading-muted);
+  --japanese-rule: rgb(44 36 48 / .10);
   --japanese-surface: rgb(240 231 226 / .62);
 }
 html.dark .japanese-page {
-  --japanese-ink: rgb(var(--night-ink));
-  --japanese-muted: rgb(var(--night-soft));
-  --japanese-rule: rgb(255 255 255 / .12);
+  --japanese-rule: rgb(255 255 255 / .10);
   --japanese-surface: rgb(255 255 255 / .028);
-}
-.japanese-page > .japanese-page-header {
-  border-color: var(--japanese-rule);
-  padding-bottom: 18px;
-}
-.japanese-page-header h1 {
-  color: var(--japanese-ink);
-  letter-spacing: -.025em;
-}
-.japanese-page-header > a.japanese-page-action {
-  border: 1px solid var(--japanese-rule);
-  border-radius: 12px;
-  background: var(--japanese-surface);
-  padding-inline: 12px;
-  color: var(--japanese-muted);
-}
-.japanese-page-header > a.japanese-page-action:hover {
-  background: transparent;
-  color: var(--accent, #b64e58);
-  border-bottom-color: currentColor;
 }
 .app-content .japanese-page .japanese-start-row {
   display: grid;
@@ -3563,11 +3535,6 @@ html.dark .japanese-source-input { box-shadow: inset 0 1px 0 rgb(255 255 255 / .
 }
 .japanese-workspace-actions { padding-bottom: 4px; }
 .japanese-character-count { color: var(--japanese-muted); }
-.japanese-workspace .japanese-start-button {
-  min-height: 42px;
-  border-radius: 11px !important;
-  box-shadow: 0 5px 14px rgb(135 48 60 / .12);
-}
 .japanese-details {
   border-color: var(--japanese-rule);
   padding-top: 3px;
@@ -3597,16 +3564,13 @@ html.dark .japanese-error { color: #f2a6a5; }
 .japanese-page .japanese-inline-reader > .sticky { border-color: var(--japanese-rule); }
 .japanese-page .japanese-continue {
   margin-top: 25px;
-  border-color: var(--japanese-rule);
+  border: 0;
+  border-radius: 0;
   background: transparent;
   box-shadow: none;
-  padding-inline: 0;
+  padding: 0;
 }
 .japanese-page .japanese-continue > [aria-hidden] { display: none; }
-.japanese-page .japanese-continue .japanese-page-action {
-  border-radius: 10px;
-  box-shadow: none;
-}
 .japanese-page .japanese-shelf {
   margin-top: 32px;
 }
@@ -3661,10 +3625,15 @@ html.dark .japanese-error { color: #f2a6a5; }
   .japanese-page .japanese-workspace { max-width: none; }
   .japanese-page .japanese-source-input { min-height: 190px; }
   .japanese-page .japanese-shelf { margin-top: 32px; }
-  .japanese-page .japanese-shelf-heading h2 { font-size: 25px; }
+}
+@media (max-width: 1023px) {
+  .japanese-page .japanese-continue {
+    margin-top: 0;
+    border-top: 1px solid var(--japanese-rule);
+    padding-top: 18px;
+  }
 }
 @media (max-width: 767px) {
-  .japanese-page > .japanese-page-header { padding-bottom: 14px; }
   .japanese-page .japanese-workspace { margin-top: 19px; }
   .japanese-page .japanese-source-input { min-height: 164px; }
   .japanese-page .japanese-workspace-actions { padding-bottom: 12px; }

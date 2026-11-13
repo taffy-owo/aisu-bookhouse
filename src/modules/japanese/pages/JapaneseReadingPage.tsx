@@ -1,13 +1,13 @@
 import { hasBookReadingHistory } from '../../books/services/bookProgress';
-import { ArrowRight, Upload } from 'lucide-react';
+import { ArrowRight, Languages, Upload } from 'lucide-react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { useSession } from '../../../app/SessionContext';
 import { ROUTES, getBookDetailPath } from '../../../config/routes';
 import { Button } from '../../../shared/components/Button';
 import { EmptyState } from '../../../shared/components/EmptyState';
-import { Panel } from '../../../shared/components/Panel';
-import { ProgressBar } from '../../../shared/components/ProgressBar';
+import { LinkButton } from '../../../shared/components/LinkButton';
+import { formatReadingProgressPercent } from '../../../shared/utils/readingProgress';
 import { HAIRLINE } from '../../../shared/ui';
 import { cn } from '../../../shared/utils/cn';
 import { BookCover, getBookList, getBrowserReaderAvailability, type Book, type SearchBooksParams } from '../../books';
@@ -185,13 +185,13 @@ export function JapaneseReadingPage() {
   };
 
   return (
-    <Panel className="japanese-page" data-navigation-pages={page} data-navigation-has-more={hasMore} data-navigation-loading={isLoading || isRefreshing || isLoadingMore}>
-      <header className={cn('japanese-page-header flex flex-col gap-4 border-b pb-5 sm:flex-row sm:items-end sm:justify-between', HAIRLINE)}>
-        <div className="min-w-0">
-          <h1 className="app-page-title mt-2 lg:mt-0 font-display text-3xl font-semibold text-stone-950 dark:text-night-ink">日文阅读</h1>
-          <p className="mt-1 text-sm leading-6 text-stone-500 dark:text-stone-400">粘贴日文，查词、注音与双语对照。</p>
-        </div>
-        <Link className="japanese-page-action inline-flex min-h-10 shrink-0 items-center justify-center gap-2 self-start rounded-lg border border-ink/[0.08] bg-white/45 px-3 py-2 text-sm font-medium text-stone-600 transition hover:bg-white/75 dark:border-white/10 dark:bg-white/[0.04] dark:text-night-soft dark:hover:bg-white/[0.07] sm:self-auto" to={ROUTES.upload}>
+    <section className="japanese-page" data-navigation-pages={page} data-navigation-has-more={hasMore} data-navigation-loading={isLoading || isRefreshing || isLoadingMore}>
+      <header className="japanese-page-header flex items-end justify-between gap-4 border-b border-ink/10 pb-3 dark:border-white/10">
+        <h1 className="app-page-title flex min-w-0 items-center gap-2.5 font-display text-2xl font-semibold tracking-tight text-stone-950 lg:text-xl sm:text-3xl dark:text-night-ink">
+          <Languages className="h-5 w-5 shrink-0 text-accent sm:h-6 sm:w-6 dark:text-accent-soft" />
+          <span>日文阅读</span>
+        </h1>
+        <Link className="inline-flex shrink-0 items-center gap-2 text-sm text-ink/55 transition hover:text-accent dark:text-stone-400 dark:hover:text-accent-soft" to={ROUTES.upload}>
           <Upload className="h-4 w-4" />上传日文书
         </Link>
       </header>
@@ -204,7 +204,7 @@ export function JapaneseReadingPage() {
       <section className="japanese-shelf mt-9 sm:mt-11 lg:mt-5">
         <div className="japanese-shelf-heading flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h2 className=" font-display text-2xl font-semibold text-stone-950 sm:text-3xl lg:text-xl dark:text-night-ink">日文书架</h2>
+            <h2 className="font-display text-xl font-semibold text-stone-950 sm:text-2xl lg:text-lg dark:text-night-ink">日文书架</h2>
           </div>
           {query && <p title={query} className="line-clamp-2 min-w-0 break-words text-sm text-stone-500 dark:text-stone-400">搜索“{query}”</p>}
         </div>
@@ -259,7 +259,7 @@ export function JapaneseReadingPage() {
           onRetryRefresh={() => setReloadKey((key) => key + 1)}
         />}
       </section>
-    </Panel>
+    </section>
   );
 }
 
@@ -275,10 +275,13 @@ function ContinueJapaneseBook({ book }: { book: Book }) {
           <p className="text-xs font-medium text-accent dark:text-peach">{availability.canReadInBrowser ? (hasBookReadingHistory(book) ? '继续阅读' : '待阅读') : '我的日文书'}</p>
           <h2 className="mt-2 line-clamp-2 font-display text-xl font-semibold leading-snug text-stone-950 sm:text-3xl lg:text-xl dark:text-night-ink">{book.title}</h2>
           <p className="mt-1 truncate text-sm text-stone-500 dark:text-stone-400" title={book.author?.trim() || '佚名'}>{book.author?.trim() || '佚名'}</p>
-          <ProgressBar className="mt-5" value={book.progressPercent} />
-          <Link className="japanese-page-action mt-4 inline-flex min-h-10 items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white transition hover:gap-3 hover:bg-accent-deep" title={availability.reason} state={navigationState} to={availability.entryPath}>
+          <div className="reading-feature-progress mt-3" style={{ width: '100%' }}>
+            <div><span>阅读进度</span><span>{formatReadingProgressPercent(book.progressPercent)}</span></div>
+            <div className="reading-feature-track"><span style={{ width: `${book.progressPercent}%` }} /></div>
+          </div>
+          <LinkButton className="mt-4" title={availability.reason} state={navigationState} to={availability.entryPath}>
             {availability.canReadInBrowser ? (hasBookReadingHistory(book) ? '继续读' : '开始阅读') : '查看详情'} <ArrowRight className="h-4 w-4" />
-          </Link>
+          </LinkButton>
         </div>
       </div>
     </section>

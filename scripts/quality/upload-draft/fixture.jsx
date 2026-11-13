@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { Link, MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom';
 import { SessionContext } from '../../../src/app/SessionContext';
 import { AppLayout } from '../../../src/app/AppLayout';
+import { HomePage } from '../../../src/modules/library/pages/HomePage';
 import { ThemeProvider } from '../../../src/shared/theme/ThemeProvider';
 import { JapaneseReadingPage } from '../../../src/modules/japanese/pages/JapaneseReadingPage';
 import { TranslationPage } from '../../../src/modules/uploads/pages/TranslationPage';
@@ -61,11 +62,22 @@ Storage.prototype.removeItem = function (key) {
   return remove.call(this, key);
 };
 const nativeFetch = window.fetch.bind(window);
+const styleBooks = [{
+  id: 'style-book', title: '我是猫', author: '夏目漱石', kind: 'novel', reader_type: 'epub',
+  language: 'ja', status: 'ready', publication_status: 'completed', public_status: 'private',
+  is_owned: true, owner_id: session.id, owner_nickname: session.nickname, readers_label: '仅自己',
+  tags: [], progress_percent: 42, current_chapter: '第一章', cover_url: null,
+  description: '夏目漱石的长篇小说。', rating: 0, favorite: false, disliked: false,
+  chapter_count: 11, page_count: 0, character_count: 0, asset_count: 11,
+  created_at: '2026-11-01T00:00:00Z', updated_at: '2026-11-01T00:00:00Z',
+}];
 window.fetch = async (input, options) => {
   const path = new URL(String(input), location.origin).pathname;
   if (!path.startsWith('/api/v1/')) return nativeFetch(input, options);
   fixture.apiReads.push({ path, method: options?.method || 'GET' });
-  if (path === '/api/v1/books') return Response.json({ items: [], total: 0, page: 1, page_size: 36, has_more: false });
+  if (query.has('styleMatch') && path.endsWith('/books/overview')) return Response.json({ items: styleBooks, updated_items: [], total: 1, continue_book: styleBooks[0], book_labels: [], favorite_count: 0, finished_count: 0, in_progress_count: 1 });
+  if (query.has('styleMatch') && path.endsWith('/reading-activity')) return Response.json({ days: [], total_seconds: 0, today_seconds: 0, week_seconds: 0, streak_days: 0, longest_streak_days: 0, active_days: 0 });
+  if (path === '/api/v1/books') return Response.json({ items: query.has('styleMatch') ? styleBooks : [], total: query.has('styleMatch') ? 1 : 0, page: 1, page_size: 36, has_more: false });
   if (path.endsWith('/uploads/tasks/completed')) {
     fixture.clearRequests.push('uploads');
     const scope = getAccountScope();
@@ -155,5 +167,5 @@ function FixtureSession({ children }) {
   return <SessionContext.Provider value={{ session: current, isLoading: false, logout: noop, login: async () => current, registerWithInvitation: async () => current, updateNickname: noop, updateAvatar: noop, changePassword: noop }}>{children}</SessionContext.Provider>;
 }
 function Probe() { const navigate = useNavigate(); fixture.navigate = navigate; return null; }
-const tree = <FixtureSession><MemoryRouter initialEntries={[query.has('japanese') ? '/japanese' : query.has('taskMessages') || query.has('taskFocus') || query.has('translation') ? '/translations' : '/upload']}><Probe /><ThemeProvider><Routes><Route element={<AppLayout />}><Route path="/upload" element={<UploadPage />} /><Route path="/translations" element={<TranslationPage />} /><Route path="/japanese" element={<JapaneseReadingPage />} /><Route path="/draft-away" element={<main><Link id="reopen" to="/upload">返回上传页</Link></main>} /></Route></Routes></ThemeProvider></MemoryRouter></FixtureSession>;
+const tree = <FixtureSession><MemoryRouter initialEntries={[query.has('home') ? '/' : query.has('japanese') ? '/japanese' : query.has('taskMessages') || query.has('taskFocus') || query.has('translation') ? '/translations' : '/upload']}><Probe /><ThemeProvider><Routes><Route element={<AppLayout />}><Route index element={<HomePage />} /><Route path="/upload" element={<UploadPage />} /><Route path="/translations" element={<TranslationPage />} /><Route path="/japanese" element={<JapaneseReadingPage />} /><Route path="/draft-away" element={<main><Link id="reopen" to="/upload">返回上传页</Link></main>} /></Route></Routes></ThemeProvider></MemoryRouter></FixtureSession>;
 createRoot(document.getElementById('root')).render(query.has('strict') ? <React.StrictMode>{tree}</React.StrictMode> : tree);

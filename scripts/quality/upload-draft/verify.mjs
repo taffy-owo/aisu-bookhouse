@@ -8,6 +8,7 @@ import { createServer } from 'vite';
 import { verifyTaskMessages } from './task-message-cases.mjs';
 import { verifyTaskFocus } from './task-focus-cases.mjs';
 import { verifyWorkspaces } from './workspace-cases.mjs';
+import { verifyPageStyle } from './style-cases.mjs';
 
 // Real UploadPage, isolated storage, fake HTTP/XHR and no production writes.
 const root = fileURLToPath(new URL('../../../', import.meta.url));
@@ -19,6 +20,7 @@ const acceptanceBaseline = process.argv.includes('--acceptance-baseline');
 const acceptanceOnly = process.argv.includes('--acceptance');
 const messagesOnly = process.argv.includes('--messages');
 const workspacesOnly = process.argv.includes('--workspaces');
+const styleOnly = process.argv.includes('--style');
 const focusBaseline = process.argv.includes('--focus-baseline');
 const focusOnly = process.argv.includes('--focus') || focusBaseline;
 const vite = await createServer({ root, server: { host: '127.0.0.1', port: 0 } });
@@ -54,7 +56,8 @@ async function fresh(query = '', width = 1536, height = 864, touch = false) {
   await command('Page.navigate', { url: 'about:blank' }); await wait('location.href==="about:blank"'); await command('Storage.clearDataForOrigin', { origin, storageTypes: 'all' });
   await command('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: touch }); await command('Emulation.setTouchEmulationEnabled', { enabled: touch, maxTouchPoints: touch ? 5 : 1 });
   await command('Page.navigate', { url: origin + '/scripts/quality/upload-draft/fixture.html?' + query + (strictMode ? '&strict' : '') });
-  if (/taskMessages|taskFocus|translation/.test(query)) await wait('!!document.querySelector("[aria-label=翻译记录]")');
+  if (/home/.test(query)) await wait('!!document.querySelector(".home-compact-page")');
+  else if (/taskMessages|taskFocus|translation/.test(query)) await wait('!!document.querySelector("[aria-label=翻译记录]")');
   else if (/japanese/.test(query)) await wait('!!document.querySelector(".japanese-source-input")');
   else await manual();
 }
@@ -145,7 +148,9 @@ async function verifyAcceptance() {
 }
 try {
   await command('Page.enable'); await command('Runtime.enable');
-  if (workspacesOnly) {
+  if (styleOnly) {
+    await verifyPageStyle({ evaluate, wait, ensure, fresh, shot });
+  } else if (workspacesOnly) {
     await verifyWorkspaces({ evaluate, wait, ensure, fresh, shot, sleep });
   } else if (focusOnly) {
     await command('Emulation.setFocusEmulationEnabled', { enabled: true });
@@ -259,7 +264,7 @@ try {
     await verifyAcceptance();
     ensure(errors.length===0 && forwardedErrors.length===0, 'no uncaught browser exceptions or console errors', [...errors, ...forwardedErrors]);
   }
-  fs.writeFileSync(path.join(reports, workspacesOnly ? 'workspace-results.json' : focusBaseline ? 'focus-baseline.json' : focusOnly ? 'focus-results.json' : messagesOnly ? 'message-results.json' : acceptanceOnly ? 'acceptance-results.json' : strictMode ? 'strict-results.json' : 'results.json'), JSON.stringify({ passed: checks.length, checks }, null, 2));
+  fs.writeFileSync(path.join(reports, styleOnly ? 'style-results.json' : workspacesOnly ? 'workspace-results.json' : focusBaseline ? 'focus-baseline.json' : focusOnly ? 'focus-results.json' : messagesOnly ? 'message-results.json' : acceptanceOnly ? 'acceptance-results.json' : strictMode ? 'strict-results.json' : 'results.json'), JSON.stringify({ passed: checks.length, checks }, null, 2));
 } catch (error) {
   console.log('FAILURE', String(error), JSON.stringify(errors).slice(0, 2000)); await shot('failure'); throw error;
 } finally {
